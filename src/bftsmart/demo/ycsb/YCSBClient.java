@@ -132,6 +132,12 @@ public class YCSBClient extends DB {
 			ths[i] = new YCSBClientThread(client_ID + i);
 			ths[i].start();
 		}
+		
+		try {
+			ths[0].join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 
 	}
 	
