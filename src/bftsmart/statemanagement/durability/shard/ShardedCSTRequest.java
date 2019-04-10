@@ -126,6 +126,11 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
 			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
 			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
+			
+			System.out.println(chkpntState);
+			System.out.println(upperLogState);
+			System.out.println(lowerLogState);
+			
 			throw new Exception("chkpntState == null || upperLogState == null || lowerLogState == null");
 		}
 	
