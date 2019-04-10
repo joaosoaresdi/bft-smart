@@ -1,0 +1,38 @@
+Loading workload...
+Starting test.
+ 0 sec: 0 operations; 
+SLF4J: A number (96) of logging calls during the initialization phase have been intercepted and are
+SLF4J: now being replayed. These are subject to the filtering rules of the underlying logging system.
+SLF4J: See also http://www.slf4j.org/codes.html#replay
+ 1 sec: 0 operations; 
+ 2 sec: 2 operations; 1.99 current ops/sec; [UPDATE AverageLatency(us)=332590] 
+ 3 sec: 39 operations; 36.93 current ops/sec; [UPDATE AverageLatency(us)=354157.73] 
+ 4 sec: 89 operations; 49.75 current ops/sec; [UPDATE AverageLatency(us)=251307.6] 
+ 5 sec: 139 operations; 49.85 current ops/sec; [UPDATE AverageLatency(us)=191591.7] 
+ 6 sec: 197 operations; 57.65 current ops/sec; [UPDATE AverageLatency(us)=191061.28] 
+ 7 sec: 239 operations; 41.87 current ops/sec; [UPDATE AverageLatency(us)=218878.19] 
+ 8 sec: 289 operations; 50 current ops/sec; [UPDATE AverageLatency(us)=193031.88] 
+ 9 sec: 367 operations; 77.92 current ops/sec; [UPDATE AverageLatency(us)=148420.82] 
+ 10 sec: 437 operations; 69.79 current ops/sec; [UPDATE AverageLatency(us)=138111.54] 
+ 11 sec: 509 operations; 71.78 current ops/sec; [UPDATE AverageLatency(us)=129736.28] 
+ 12 sec: 589 operations; 79.76 current ops/sec; [UPDATE AverageLatency(us)=132257.41] 
+ 13 sec: 677 operations; 87.74 current ops/sec; [UPDATE AverageLatency(us)=118486.92] 
+ 14 sec: 759 operations; 81.67 current ops/sec; [UPDATE AverageLatency(us)=112783.51] 
+ 15 sec: 849 operations; 89.73 current ops/sec; [UPDATE AverageLatency(us)=115666.29] 
+ 16 sec: 936 operations; 86.57 current ops/sec; [UPDATE AverageLatency(us)=116238.18] 
+ 17 sec: 1036 operations; 99.8 current ops/sec; [UPDATE AverageLatency(us)=100451.13] 
+ 18 sec: 1157 operations; 120.88 current ops/sec; [UPDATE AverageLatency(us)=83325.33] 
+ 19 sec: 1287 operations; 129.48 current ops/sec; [UPDATE AverageLatency(us)=76396.04] 
+ 20 sec: 1425 operations; 137.45 current ops/sec; [UPDATE AverageLatency(us)=76015.36] 
+ 21 sec: 1565 operations; 139.58 current ops/sec; [UPDATE AverageLatency(us)=72760.84] 
+ 22 sec: 1715 operations; 149.85 current ops/sec; [UPDATE AverageLatency(us)=66056.85] 
+ 23 sec: 1826 operations; 110.67 current ops/sec; [UPDATE AverageLatency(us)=84448] 
+ 24 sec: 1925 operations; 98.9 current ops/sec; [UPDATE AverageLatency(us)=107330.94] 
+ 25 sec: 2025 operations; 99.9 current ops/sec; [UPDATE AverageLatency(us)=98499.8] 
+ 26 sec: 2166 operations; 139.6 current ops/sec; [UPDATE AverageLatency(us)=69576.97] 
+ 27 sec: 2245 operations; 78.53 current ops/sec; [UPDATE AverageLatency(us)=82166.78] 
+ 28 sec: 2245 operations; 0 current ops/sec;  
+ 29 sec: 2245 operations; 0 current ops/sec;  
+ 30 sec: 2245 operations; 0 current ops/sec;  
+ 31 sec: 2245 operations; 0 current ops/sec;  
+ 32 sec: 2245 operations; 0 current ops/sec;  

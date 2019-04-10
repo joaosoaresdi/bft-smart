@@ -1,0 +1,79 @@
+<configuration debug="true">
+
+	<!-- Logging to console -->
+	<appender name="STDERR"
+		class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger{56}.%M - %msg%n
+			</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="STDOUT-TRACE"
+		class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<!-- <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} 
+				- %msg%n</pattern> -->
+			<pattern> \t%level [%thread] %C.%M %n </pattern>
+			
+		</encoder>
+	</appender>
+
+	<!-- Logging to console wih minimal output -->
+	<appender name="STDOUT-INFO"
+		class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern> \t\t %level [%thread] %C.%M - %msg%n </pattern>
+		</encoder>
+	</appender>
+
+	<!-- https://logback.qos.ch/manual/appenders.html#AsyncAppender http://blog.takipi.com/how-to-instantly-improve-your-java-logging-with-7-logback-tweaks/ -->
+	<appender name="ASYNC"
+		class="ch.qos.logback.classic.AsyncAppender">
+		<appender-ref ref="STDERR" />
+		<queueSize>1000</queueSize>
+	</appender>
+
+
+	<logger name="bftsmart.tom.ServiceProxy">
+		<level value="OFF" />
+	</logger>
+	
+	<logger name="bftsmart.communication.client">
+		<level value="OFF" />
+	</logger>
+	
+	<logger name="bftsmart.consensus">
+		<level value="ALL" />
+		<appender-ref ref="STDOUT-INFO" />
+	</logger>
+				
+	<logger name="bftsmart.tom">
+		<level value="INFO" />
+		<level value="DEBUG" />
+		<appender-ref ref="STDOUT-INFO" />
+	</logger>
+
+	<logger name="bftsmart.demo">
+		<level value="ALL" />
+		<appender-ref ref="STDERR" />
+	</logger>
+	
+	<logger name="bftsmart.statemanagement">
+		<level value="INFO" />
+		<level value="DEBUG" />
+		<appender-ref ref="STDERR" />
+	</logger>
+					
+	<logger name="org.slf4j.helpers">
+		<level value="OFF" />
+	</logger>
+	
+	<logger name="io.netty">
+		<level value="OFF" />
+	</logger>
+
+	<root level="OFF">
+	</root>
+
+</configuration>
