@@ -119,17 +119,25 @@ public class YCSBClient extends DB {
         System.out.println("YCSBClient. Initiated client id: " + this.myId);
     }
     
+	private static final int OP_COUNT = 15555; 
+
 	public static void main(String[] args) {
 		
-		if(args.length != 2) {
-			System.out.println("Usage: java YCSBClient <# of clients> <1st client ID>");
+		if(args.length < 2) {
+			System.out.println("Usage: java YCSBClient <# of clients> <1st client ID> [# of KV operations]");
 			System.exit(-1);
 		}
+		
 		int clients = Integer.parseInt(args[0]);
 		int client_ID = Integer.parseInt(args[1]);
+		int opCount = OP_COUNT;
+		if(args.length == 3) {
+			opCount = Integer.parseInt(args[2]);
+		}
+		
 		Thread[] ths = new Thread[clients];
 		for(int i = 0; i < clients; i++) {
-			ths[i] = new YCSBClientThread(client_ID + i);
+			ths[i] = new YCSBClientThread(client_ID + i, opCount);
 			ths[i].start();
 		}
 		
@@ -151,7 +159,6 @@ class YCSBClientThread extends Thread {
 	private static final String TABLE_NAME = "table0";
 	private static final String ATTR_NAME = "field";
 	
-	private static final int RECORD_COUNT = 15222; 
 	private static final int ATTR_COUNT = 10;
 	private static final int ATTR_LENGTH = 100;
 	
@@ -159,10 +166,12 @@ class YCSBClientThread extends Thread {
 	private Random rnd;
 
 	private YCSBClient client;
+	private int opCount;
 	
-	public YCSBClientThread(int clientId){
+	public YCSBClientThread(int clientId, int opCount){
 		this.client = new YCSBClient(clientId);
 		rnd = new Random(clientId);
+		this.opCount = opCount;
 	}
 	
 	private String randomString( int len ){
@@ -173,7 +182,7 @@ class YCSBClientThread extends Thread {
 	}
 		
 	public void run() {
-		for(int i = 0; i < RECORD_COUNT; i++) {
+		for(int i = 0; i < opCount; i++) {
 			System.out.println("###### STARTING : " + i);
 			String key = "" + System.currentTimeMillis();
 			HashMap<String, ByteIterator> value = new HashMap<>();
