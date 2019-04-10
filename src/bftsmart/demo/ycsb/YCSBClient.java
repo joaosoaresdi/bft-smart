@@ -109,7 +109,6 @@ public class YCSBClient extends DB {
     }
     
     
-    
 	private static final String ATTR_NAME = "field";
 	
 	private static final int RECORD_COUNT = 15222; 
@@ -131,6 +130,8 @@ public class YCSBClient extends DB {
 	}
 	
 	public static void main(String[] args) {
+		
+		
 		String table = "table0";
 		
 		YCSBClient client = new YCSBClient();
@@ -142,7 +143,6 @@ public class YCSBClient extends DB {
 		
 		for(int i = 0; i < RECORD_COUNT; i++) {
 			System.out.println("###### STARTING : " + i);
-			//String key = randomString(KEY_SIZE);
 			String key = "" + System.currentTimeMillis();
 			HashMap<String, ByteIterator> value = new HashMap<>();
 			for(int j = 0; j < ATTR_COUNT; j++) {

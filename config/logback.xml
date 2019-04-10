@@ -1,4 +1,4 @@
-<configuration debug="true">
+<configuration debug="false">
 
 	<!-- Logging to console -->
 	<appender name="STDERR"
@@ -44,24 +44,22 @@
 	</logger>
 	
 	<logger name="bftsmart.consensus">
-		<level value="ALL" />
+		<level value="ERROR" />
 		<appender-ref ref="STDOUT-INFO" />
 	</logger>
 				
 	<logger name="bftsmart.tom">
-		<level value="INFO" />
-		<level value="DEBUG" />
+		<level value="ERROR" />
 		<appender-ref ref="STDOUT-INFO" />
 	</logger>
 
 	<logger name="bftsmart.demo">
-		<level value="ALL" />
+		<level value="ERROR" />
 		<appender-ref ref="STDERR" />
 	</logger>
 	
 	<logger name="bftsmart.statemanagement">
-		<level value="INFO" />
-		<level value="DEBUG" />
+		<level value="ERROR" />
 		<appender-ref ref="STDERR" />
 	</logger>
 					

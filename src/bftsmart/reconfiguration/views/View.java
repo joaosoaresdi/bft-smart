@@ -87,7 +87,6 @@ public class View implements Serializable {
  		for(int i = 0; i < processes.length;i++){
  			ret = ret+processes[i]+"("+addresses.get(processes[i])+"),";
  		}
-
  		return ret;
  	}
  	public InetSocketAddress getAddress(int id) {

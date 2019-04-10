@@ -27,7 +27,6 @@ public class HostsConfig {
     
     private HashMap<Integer,Config> servers = new HashMap<>();
     
-    
     /** Creates a new instance of ServersConfig */
     public HostsConfig(String configHome, String fileName) {
         loadConfig(configHome, fileName);
