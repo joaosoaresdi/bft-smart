@@ -44,22 +44,22 @@
 	</logger>
 	
 	<logger name="bftsmart.consensus">
-		<level value="ERROR" />
+		<level value="ALL" />
 		<appender-ref ref="STDOUT-INFO" />
 	</logger>
 				
 	<logger name="bftsmart.tom">
-		<level value="ERROR" />
+		<level value="ALL" />
 		<appender-ref ref="STDOUT-INFO" />
 	</logger>
 
 	<logger name="bftsmart.demo">
-		<level value="ERROR" />
+		<level value="ALL" />
 		<appender-ref ref="STDERR" />
 	</logger>
 	
 	<logger name="bftsmart.statemanagement">
-		<level value="ERROR" />
+		<level value="ALL" />
 		<appender-ref ref="STDERR" />
 	</logger>
 					
