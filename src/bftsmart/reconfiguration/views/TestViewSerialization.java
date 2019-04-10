@@ -33,7 +33,7 @@ public class TestViewSerialization {
         
         String path = System.getProperty("user.dir") + System.getProperty("file.separator") + "config";
         
-        ViewStorage st = new DefaultViewStorage(path);
+        ViewStorage st = new DefaultViewStorage(path, 0);
         st.storeView(v);
         
         View r = st.readView();

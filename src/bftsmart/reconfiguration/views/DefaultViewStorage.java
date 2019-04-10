@@ -30,14 +30,15 @@ import java.io.ObjectOutputStream;
 public class DefaultViewStorage implements ViewStorage {
 
     private String path = "";
+    private int proc_id;
     
-    public DefaultViewStorage(String configPath) {
+    public DefaultViewStorage(String configPath, int proc_id) {
         path = configPath;
         File f = new File(path);
         if (!f.exists()) {
             f.mkdirs();
         }
-        path = path + System.getProperty("file.separator") + "currentView";
+        path = path + System.getProperty("file.separator") + proc_id + ".currentView";
     }
 
     @Override

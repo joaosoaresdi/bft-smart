@@ -114,9 +114,9 @@ public class YCSBClient extends DB {
     }
 
     public YCSBClient(ServiceProxy proxy, int myId) {
+        System.out.println("Initializind client (" + this.myId + ")");
     	this.proxy = proxy;
     	this.myId = myId;
-        System.out.println("YCSBClient. Initiated client id: " + this.myId);
     }
     
 	private static final int OP_COUNT = 15555; 
@@ -148,9 +148,7 @@ public class YCSBClient extends DB {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-
 	}
-	
 }
 
 class YCSBClientThread extends Thread {
@@ -183,7 +181,7 @@ class YCSBClientThread extends Thread {
 		
 	public void run() {
 		for(int i = 0; i < opCount; i++) {
-			System.out.println("###### STARTING : " + i);
+			System.out.println("#### STARTING : " + i);
 			String key = "" + System.currentTimeMillis();
 			HashMap<String, ByteIterator> value = new HashMap<>();
 			for(int j = 0; j < ATTR_COUNT; j++) {
