@@ -134,7 +134,9 @@ public class YCSBClient extends DB {
 		}
 		
 		try {
-			ths[0].join();
+			for(int i = 0; i < clients; i++) {
+				ths[i].join();
+			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
