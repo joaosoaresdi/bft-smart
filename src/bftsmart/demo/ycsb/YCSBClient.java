@@ -37,12 +37,12 @@ import bftsmart.tom.ServiceProxy;
 public class YCSBClient extends DB {
 
     private static AtomicInteger counter = new AtomicInteger();
-    private ServiceProxy proxy = null;
+    public ServiceProxy proxy = null;
     private int myId;
 
     public YCSBClient() {
     }
-
+    
     @Override
     public void init() {
         Properties props = getProperties();
@@ -94,7 +94,7 @@ public class YCSBClient extends DB {
     public int update(String table, String key,
             HashMap<String, ByteIterator> values) {
 
-    	System.out.println("UPDATE : table : " + table + "; key : " + key + "\n attribute.length : " + values.keySet().toArray(new String[0]).length +  "\n attribute.value.length: "+ values.values().toArray(new ByteIterator[0])[0].toString().length());
+    	System.out.println("UPDATE : table : " + table + "; key : " + key);
     	
         Iterator<String> keys = values.keySet().iterator();
         HashMap<String, byte[]> map = new HashMap<>();
@@ -108,39 +108,63 @@ public class YCSBClient extends DB {
         return replyMsg.getResult();
     }
     
+    // added by JSoares
+    public YCSBClient(int myId) {
+    	this(new ServiceProxy(myId), myId);
+    }
+
+    public YCSBClient(ServiceProxy proxy, int myId) {
+    	this.proxy = proxy;
+    	this.myId = myId;
+        System.out.println("YCSBClient. Initiated client id: " + this.myId);
+    }
     
+	public static void main(String[] args) {
+		
+		if(args.length != 2) {
+			System.out.println("Usage: java YCSBClient <# of clients> <1st client ID>");
+			System.exit(-1);
+		}
+		int clients = Integer.parseInt(args[0]);
+		int client_ID = Integer.parseInt(args[1]);
+		Thread[] ths = new Thread[clients];
+		for(int i = 0; i < clients; i++) {
+			ths[i] = new YCSBClientThread(client_ID + i);
+			ths[i].start();
+		}
+
+	}
+	
+}
+
+class YCSBClientThread extends Thread {
+	
+	private static final String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	private static final String TABLE_NAME = "table0";
 	private static final String ATTR_NAME = "field";
 	
 	private static final int RECORD_COUNT = 15222; 
-	private static final int KEY_SIZE = 10;
-
 	private static final int ATTR_COUNT = 10;
 	private static final int ATTR_LENGTH = 100;
 	
-	
-	static final String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	//static SecureRandom rnd = new SecureRandom("hello".getBytes());
-	static Random rnd = new Random(15);
+	private Random rnd;
 
-	static String randomString( int len ){
-	   StringBuilder sb = new StringBuilder( len );
-	   for( int i = 0; i < len; i++ ) 
-	      sb.append( AB.charAt( rnd.nextInt(AB.length()) ) );
-	   return sb.toString();
+	private YCSBClient client;
+	
+	public YCSBClientThread(int clientId){
+		this.client = new YCSBClient(clientId);
+		rnd = new Random(clientId);
 	}
 	
-	public static void main(String[] args) {
+	private String randomString( int len ){
+		   StringBuilder sb = new StringBuilder( len );
+		   for( int i = 0; i < len; i++ ) 
+		      sb.append( AB.charAt( rnd.nextInt(AB.length()) ) );
+		   return sb.toString();
+	}
 		
-		
-		String table = "table0";
-		
-		YCSBClient client = new YCSBClient();
-		
-        client.myId = 1111;
-        client.proxy = new ServiceProxy(client.myId);
-        System.out.println("YCSBKVClient. Initiated client id: " + client.myId);
-
-		
+	public void run() {
 		for(int i = 0; i < RECORD_COUNT; i++) {
 			System.out.println("###### STARTING : " + i);
 			String key = "" + System.currentTimeMillis();
@@ -150,10 +174,10 @@ public class YCSBClient extends DB {
 				byte[] data = randomString(ATTR_LENGTH).getBytes();
 				value.put(attr, new ByteArrayByteIterator(data));
 			}
-			client.update(table, key, value);
-			System.out.println("###### ENDED : " + i);
+			client.update(TABLE_NAME, key, value);
 		}
-
+		System.out.println("## Stopping Client");
+		client.proxy.close();
 	}
-
 }
+

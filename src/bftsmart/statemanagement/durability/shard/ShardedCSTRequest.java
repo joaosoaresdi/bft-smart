@@ -108,7 +108,7 @@ public class ShardedCSTRequest extends CSTRequestF1 {
     }
 	
 	//defines the set of common shards between all replicas and defines which are assigned to each replica
-	public void assignShards(HashMap<Integer, ShardedCSTState> firstReceivedStates, byte[] localState) {
+	public void assignShards(HashMap<Integer, ShardedCSTState> firstReceivedStates, byte[] localState) throws Exception {
 		MessageDigest md = null;
 		try {
 			md = MessageDigest.getInstance(hashAlgo);
@@ -117,23 +117,21 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		}
 		MerkleTree localStateMT = MerkleTree.createTree(md, shardSize, localState);
 		
-		MerkleTree chkpntMT = firstReceivedStates.get(checkpointReplica).getMerkleTree();
-		MerkleTree upperLogMT = firstReceivedStates.get(logUpper).getMerkleTree();
-		MerkleTree lowerLogtMT = firstReceivedStates.get(logLower).getMerkleTree();
-
-		System.out.println("localStateMT height " + localStateMT.getHeight());
-		System.out.println("chkpntMT height " + chkpntMT.getHeight());
-		System.out.println("upperLogMT height " + upperLogMT.getHeight());
-		System.out.println("lowerLogtMT height " + lowerLogtMT.getHeight());
-		
-//		System.out.println(chkpntMT.toString());
-//		System.out.println();
-//
-//		System.out.println(upperLogMT.toString());
-//		System.out.println();
-//
-//		System.out.println(lowerLogtMT.toString());
-//		System.out.println();
+		ShardedCSTState chkpntState = firstReceivedStates.get(checkpointReplica);
+		ShardedCSTState upperLogState = firstReceivedStates.get(logUpper);
+		ShardedCSTState lowerLogState = firstReceivedStates.get(logLower);
+		if(chkpntState == null || upperLogState == null || lowerLogState == null) {
+			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
+			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
+			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
+			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
+			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
+			throw new Exception("chkpntState == null || upperLogState == null || lowerLogState == null");
+		}
+	
+		MerkleTree chkpntMT = chkpntState.getMerkleTree();
+		MerkleTree upperLogMT = upperLogState.getMerkleTree();
+		MerkleTree lowerLogtMT = lowerLogState.getMerkleTree();
 
 		this.shardCount = chkpntMT.getLeafCount();		
 
@@ -142,11 +140,6 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		commonShards.addAll(chkpntMT.getEqualPageIndexs(upperLogMT));
 		commonShards.retainAll(chkpntMT.getEqualPageIndexs(lowerLogtMT));
 		
-		//System.out.println("Local State: " + Arrays.toString(localState));
-//		System.out.println("Common: " + commonShards.toArray(new Integer[0]).length);
-//		System.out.println("Common local/ChkPnt: " + localStateMT.getEqualPageIndexs(chkpntMT));
-//		System.out.println("Common local/Upper: " + localStateMT.getEqualPageIndexs(upperLogMT));
-//		System.out.println("Common local/Lower: " + localStateMT.getEqualPageIndexs(lowerLogtMT));
 		Integer[] shards = new Integer[this.shardCount];
 		for(int i = 0;i < shardCount; i++)
 			shards[i] = i;

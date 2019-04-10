@@ -240,6 +240,7 @@ public class DurableStateLog extends StateLog {
     		return getOriginalState(cstRequest);
     }
     
+    //Added by JSoares
     private CSTState getShardedState(ShardedCSTRequest cstRequest) {
         int lastCheckpointCID = getLastCheckpointCID();
         int lastCID = getLastCID();        
@@ -303,8 +304,6 @@ public class DurableStateLog extends StateLog {
             checkpointLock.unlock();
             
             CommandsInfo[] logUpper = fr.getLogState(cstRequest.getLogUpperSize(), logPath);
-//            System.out.println(" " + TOMUtil.getBytes(logUpper).length + " bytes");
-//            System.out.println("--- State size: " + ckpState.length + " Current state Hash: " + ckpHash);
 
             int lastCIDInState = lastCheckpointCID + cstRequest.getLogUpperSize();
             ShardedCSTState cstState = new ShardedCSTState(ckpState, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize());

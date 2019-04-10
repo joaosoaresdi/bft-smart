@@ -116,6 +116,7 @@ public class ShardedStateManager extends DurableStateManager {
 					} else {
 						// ask for state
 						logger.info("Replica state is outdated...");
+						System.out.println("Replica State is outdated...");
 						lastCID = cid + 1;
 						if (waitingCID == -1) {
 							waitingCID = cid;
@@ -127,10 +128,15 @@ public class ShardedStateManager extends DurableStateManager {
 		}
 	}
 
+	private long CST_start_time;
+	private long CST_end_time;
+	
 	private int retries = 0;
 
 	@Override
 	protected void requestState() {
+		CST_start_time = System.currentTimeMillis();
+		
 		logger.trace("");
 		if (tomLayer.requestsTimer != null) {
 			tomLayer.requestsTimer.clearAll();
@@ -140,18 +146,23 @@ public class ShardedStateManager extends DurableStateManager {
 		int[] otherReplicas = SVController.getCurrentViewOtherAcceptors();
 		int globalCkpPeriod = SVController.getStaticConf().getGlobalCheckpointPeriod();
 
-		ShardedCSTRequest cst = new ShardedCSTRequest(waitingCID, SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize());
-		cst.defineReplicas(otherReplicas, globalCkpPeriod, me);
-		cst.assignShards(firstReceivedStates, dt.getRecoverer().getState(this.lastCID, true).getSerializedState());
+		try {
+			ShardedCSTRequest cst = new ShardedCSTRequest(waitingCID, SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize());
+			cst.defineReplicas(otherReplicas, globalCkpPeriod, me);
+			cst.assignShards(firstReceivedStates, dt.getRecoverer().getState(this.lastCID, true).getSerializedState());
+			logger.debug("\n\t Starting State Transfer: \n" + cst);
+			System.out.println("Starting State Transfer: \n" + cst);
 
-		logger.debug("\n\t Starting State Transfer: \n" + cst);
+			this.shardedCSTConfig = cst;
+			this.retries = 0;
+			this.statePlusLower = null;
 
-		this.shardedCSTConfig = cst;
-		this.retries = 0;
-		this.statePlusLower = null;
+			ShardedCSTSMMessage cstMsg = new ShardedCSTSMMessage(me, waitingCID,TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
+			tomLayer.getCommunication().send(SVController.getCurrentViewOtherAcceptors(), cstMsg);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
-		ShardedCSTSMMessage cstMsg = new ShardedCSTSMMessage(me, waitingCID,TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
-		tomLayer.getCommunication().send(SVController.getCurrentViewOtherAcceptors(), cstMsg);
 
 		TimerTask stateTask = new TimerTask() {
 			public void run() {                
@@ -583,6 +594,10 @@ public class ShardedStateManager extends DurableStateManager {
 							appStateOnly = false;
 							tomLayer.getSynchronizer().resumeLC();
 						}
+						CST_end_time = System.currentTimeMillis();
+						
+						System.out.println("State Transfer process completed successfuly!");
+						System.out.println("State Transfer duration: " + (CST_end_time - CST_start_time));
 						
 					} else if (chkpntState == null
 							&& (SVController.getCurrentViewN() / 2) < getReplies()) {
