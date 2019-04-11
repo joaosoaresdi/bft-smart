@@ -12,4 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-java -Dlogback.configurationFile="./config/logback.xml" -cp .:./bin:./lib/* bftsmart.demo.ycsb.YCSBClient $1 $2
+if [ "$#" -ne 2 ]; then
+    echo "Illegal number of parameters"
+    echo "Usage: ./ycsbClientTest <# of clients> <base client id>"
+    exit
+fi
+
+CLIENTS=$1
+CLIENT_ID=$2
+
+while [ $CLIENTS -gt 0 ]
+do
+	CRT_CLIENT=$((CLIENT_ID + CLIENTS))
+	java -Dlogback.configurationFile="./config/logback.xml" -cp .:./bin:./lib/* bftsmart.demo.ycsb.YCSBClient $CRT_CLIENT &
+	((CLIENTS--))
+done

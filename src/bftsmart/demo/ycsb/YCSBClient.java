@@ -123,36 +123,23 @@ public class YCSBClient extends DB {
 
 	public static void main(String[] args) {
 		
-		if(args.length < 2) {
-			System.out.println("Usage: java YCSBClient <# of clients> <1st client ID> [# of KV operations]");
+		if(args.length < 1) {
+			System.out.println("Usage: java YCSBClient <client ID> [# of KV operations]");
 			System.exit(-1);
 		}
 		
-		int clients = Integer.parseInt(args[0]);
-		int client_ID = Integer.parseInt(args[1]);
+		int client_ID = Integer.parseInt(args[0]);
 		int opCount = OP_COUNT;
-		if(args.length == 3) {
-			opCount = Integer.parseInt(args[2]);
+		if(args.length == 2) {
+			opCount = Integer.parseInt(args[1]);
 		}
 		
-		Thread[] ths = new Thread[clients];
-		for(int i = 0; i < clients; i++) {
-			ths[i] = new YCSBClientThread(client_ID + i, opCount);
-			ths[i].start();
-		}
-		
-		try {
-			for(int i = 0; i < clients; i++) {
-				ths[i].join();
-			}
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		YCSBClientThread ths = new YCSBClientThread(client_ID, opCount);
+		ths.run();
 	}
 }
 
-class YCSBClientThread extends Thread {
-	
+class YCSBClientThread {
 	private static final String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	private static final String TABLE_NAME = "table0";
 	private static final String ATTR_NAME = "field";
@@ -189,7 +176,13 @@ class YCSBClientThread extends Thread {
 				byte[] data = randomString(ATTR_LENGTH).getBytes();
 				value.put(attr, new ByteArrayByteIterator(data));
 			}
-			client.update(TABLE_NAME, key, value);
+			try {
+			System.out.println(client.update(TABLE_NAME, key, value));
+			}catch (Exception e) {
+				System.out.println("Error executing operation: " + e);
+				e.printStackTrace();
+				break;
+			}
 		}
 		System.out.println("## Stopping Client");
 		client.proxy.close();
