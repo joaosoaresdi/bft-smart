@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -lt 2 ]; then
     echo "Illegal number of parameters"
     echo "Usage: ./ycsbClientTest <# of clients> <base client id>"
     exit
+fi
+
+OP_COUNT=1000000
+if [ "$#" -eq 3 ]; then
+	OP_COUNT=$3
 fi
 
 CLIENTS=$1
@@ -24,6 +29,6 @@ CLIENT_ID=$2
 while [ $CLIENTS -gt 0 ]
 do
 	CRT_CLIENT=$((CLIENT_ID + CLIENTS))
-	java -Dlogback.configurationFile="./config/logback.xml" -cp .:./bin:./lib/* bftsmart.demo.ycsb.YCSBClient $CRT_CLIENT &
+	java -Dlogback.configurationFile="./config/logback.xml" -cp .:./bin:./lib/* bftsmart.demo.ycsb.YCSBClient $CRT_CLIENT $OP_COUNT &
 	((CLIENTS--))
 done
