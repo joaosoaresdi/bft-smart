@@ -29,8 +29,8 @@ import bftsmart.statemanagement.StateManager;
 import bftsmart.statemanagement.durability.CSTRequest;
 import bftsmart.statemanagement.durability.CSTRequestF1;
 import bftsmart.statemanagement.durability.CSTState;
+import bftsmart.statemanagement.durability.DurableStateManager;
 import bftsmart.statemanagement.durability.shard.ShardedCSTRequest;
-import bftsmart.statemanagement.durability.shard.ShardedCSTState;
 import bftsmart.statemanagement.durability.shard.ShardedStateManager;
 import bftsmart.tom.MessageContext;
 import bftsmart.tom.ReplicaContext;
@@ -382,6 +382,8 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 	}
 
 	//modified by JSoares
+	//Called by State Sender Server
+	//gets state without building MT
 	public CSTState getState(CSTRequest cstRequest) {
 		CSTState state;
 		if(cstRequest instanceof ShardedCSTRequest)
@@ -449,11 +451,14 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 		return cids;
 	}
 
+	//modified by JSoares
+	
 	@Override
 	public StateManager getStateManager() {
-		if (stateManager == null)
-//			stateManager = new DurableStateManager();
+		if (stateManager == null) {
+//				stateManager = new DurableStateManager();
 			stateManager = new ShardedStateManager();
+		}
 		return stateManager;
 	}
 

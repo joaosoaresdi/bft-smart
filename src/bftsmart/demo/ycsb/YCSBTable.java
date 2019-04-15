@@ -37,13 +37,7 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
 
 	@Override
 	public void writeExternal(ObjectOutput out) throws IOException {
-    	System.out.println("############################################");
-    	System.out.println("############## write YCSBTable #############");
-    	System.out.println("############################################");
-
-    	System.out.println(this.getClass().getName());
-    	System.out.println(this.getClass().getTypeName());
-    	System.out.println(this.getClass().getCanonicalName());
+		try {
     	
     	int written = this.getClass().getName().length();
     	Set<String> keys = this.keySet();
@@ -52,34 +46,45 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
     	fillTo1k(written, out);
     	    	
     	for(String key : keys) {
-    		written = 0;
-        	try {
-        		written += key.length();
-	    		out.writeUTF(key);
+    		byte[] key_bytes = key.getBytes();
+    		out.writeInt(key_bytes.length);
+    		written = 4;
+    		out.write(key_bytes);
+    		written +=key_bytes.length; 
+    				
+//    		written = key.length();
+//    		out.writeUTF(key);
 
-	    		HashMap<String, byte[]> crt = get(key);
-		    	List<String> sorted_attrs = Arrays.asList(crt.keySet().toArray(new String[0]));
-		    	Collections.sort(sorted_attrs);
+    		HashMap<String, byte[]> crt = get(key);
+	    	List<String> sorted_attrs = Arrays.asList(crt.keySet().toArray(new String[0]));
+	    	Collections.sort(sorted_attrs);
 
-        		written += 4;
-        		out.writeInt(sorted_attrs.size());
-		    	for(String attr : sorted_attrs) {
-	        		written += attr.length();
-		    		out.writeUTF(attr);
-		    		byte[] val = crt.get(attr);
-	        		
-		    		written += 4;
-	        		written += val.length;
-	        		
-		    		out.writeInt(val.length);
-		    		out.write(val);
-		    	}
-		    	fillTo1k(written, out);
-        	} catch (Exception e) {
-        		e.printStackTrace();
-            	break;
-        	}
+    		out.writeInt(sorted_attrs.size());
+    		written += 4;
+
+    		for(String attr : sorted_attrs) {
+	    		byte[] attr_byte = attr.getBytes();
+	    		out.writeInt(attr_byte.length);
+	    		written +=4;
+	    		out.write(attr_byte);
+	    		written += attr_byte.length;
+//        		written += attr.length();
+//	    		out.writeUTF(attr);
+	    		byte[] val = crt.get(attr);
+	    		out.writeInt(val.length);
+	    		written += 4;
+	    		out.write(val);
+        		written += val.length;
+        		
+	    	}
+	    	fillTo1k(written, out);
     	}
+//    	out.flush();
+//    	out.close();
+		}catch(Exception e) {
+			e.printStackTrace();
+			throw e;
+		}
 	}
 	
 	private void fillTo1k(int c, ObjectOutput out) throws IOException {
@@ -88,51 +93,66 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
 	}
 
 	private void readTo1k(int c, ObjectInput in) throws IOException {
-		for(int i = c; i < 1024; i++)
-			in.read();
+		for(int i = c; i < 1024; i++) {
+			int x = in.read();
+		}
 	}
 
 	@Override
 	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-    	System.out.println("############################################");
-    	System.out.println("############### read YCSBTable #############");
-    	System.out.println("############################################");
-    	
+		try {
     	int read = this.getClass().getName().length();
     	int keys = in.readInt();
     	read += 4;
     	readTo1k(read, in);
+//    	System.out.println("############################ --> " + keys);
+		for(int i = 0; i < keys; i++) {
+//			System.out.println("\t########################### --> " + i);
+			int key_size = in.readInt();
+			read = 4;
+			byte[] key_byte = new byte[key_size];
+			int r = 0;
+			while (r < key_size) {
+				r += in.read(key_byte, r, key_size-r);
+			}
+			read += r;
 
-    	System.out.println("Reading " + keys);
-		while(keys > 0) {
-			read = 0;
-	    	try {
-    			String key = in.readUTF();
-    			read += key.length();
-    			HashMap<String, byte[]> value = new HashMap<>();
-    			int attr_len = in.readInt();
-    			read += 4;
-    			for(int i = 0;i < attr_len; i++) {
-    				String attr = in.readUTF();
-    				read += attr.length();
-    				int size = in.readInt();
-    				read += 4;
-    				byte[] val = new byte[size];
-    				int r = 0;
-    				while (r < size) {
-    					r += in.read(val, r, (size-r));
-    				}
-    				read += r;
-    				value.put(attr, val);
+//    			String key = in.readUTF();
+//    			read += key.length();
+			String key = new String(key_byte);
+    		HashMap<String, byte[]> value = new HashMap<>();
+    		
+    		int attr_len = in.readInt();
+    		read += 4;
+    		for(int j = 0;j < attr_len; j++) {
+    			int attr_size = in.readInt();
+    			byte[] attr_byte = new byte[attr_size];
+    			r = 0;
+    			while (r < attr_size) {
+    				r += in.read(attr_byte, r, attr_size-r);
     			}
-        		this.put(key, value);
-//        		System.out.println("Read : " + read);
-        		readTo1k(read, in);
-	    	} catch (Exception e) {
-	    		e.printStackTrace();
-	    		break;
-	    	}
-	    	keys --;
+				read += r;
+    			
+//    				String attr = in.readUTF();
+//    				read += attr.length();
+    			
+				int size = in.readInt();
+				read += 4;
+				byte[] val = new byte[size];
+				
+				r = 0;
+				while (r < size) {
+					r += in.read(val, r, (size-r));
+				}
+				read += r;
+				value.put(new String(attr_byte), val);
+			}
+    		this.put(key, value);
+    		readTo1k(read, in);
  		}
+		}catch(Exception e) {
+			e.printStackTrace();
+			throw e;
+		}
 	}
 }

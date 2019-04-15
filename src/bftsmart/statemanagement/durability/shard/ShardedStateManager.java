@@ -20,6 +20,7 @@ import bftsmart.consensus.messages.ConsensusMessage;
 import bftsmart.consensus.messages.MessageFactory;
 import bftsmart.reconfiguration.views.View;
 import bftsmart.statemanagement.SMMessage;
+import bftsmart.statemanagement.durability.CSTRequestF1;
 import bftsmart.statemanagement.durability.CSTSMMessage;
 import bftsmart.statemanagement.durability.CSTState;
 import bftsmart.statemanagement.durability.DurableStateManager;
@@ -52,17 +53,15 @@ public class ShardedStateManager extends DurableStateManager {
 		int me = SVController.getStaticConf().getProcessId();
 		DurableStateLog log = ((DurableStateLog)dt.getRecoverer().getLog());
 
-		//		public ShardedCSTState(byte[] state, byte[] hashCheckpoint, CommandsInfo[] logLower, byte[] hashLogLower,
-		//				CommandsInfo[] logUpper, byte[] hashLogUpper, int checkpointCID, int currentCID, int pid, String hashAlgo, int shardSize) {
-
 		ShardedCSTState state;
 		if(log == null)
-			state = new ShardedCSTState(null, null, null, null, null, null, -1, tomLayer.getLastExec(), -1, null, -1);
+			state = new ShardedCSTState(null, null, null, null, null, null, -1, tomLayer.getLastExec(), -1, SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize(), true);
 		else
-			state = log.getState(tomLayer.getLastExec(), SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize());
-		logger.debug("LOG {}", state);
+			state = log.buildCurrentState(tomLayer.getLastExec(), SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize());
+		
+		state.setSerializedState(null);
+		
 		SMMessage currentCIDReply = new StandardSMMessage(me, id, TOMUtil.SM_REPLY_INITIAL, 0, state, null, 0, 0);
-
 		logger.info("Sending reply {}", currentCIDReply);
 		tomLayer.getCommunication().send(new int[] { sender }, currentCIDReply);
 	}
@@ -147,18 +146,31 @@ public class ShardedStateManager extends DurableStateManager {
 		int globalCkpPeriod = SVController.getStaticConf().getGlobalCheckpointPeriod();
 
 		try {
-			ShardedCSTRequest cst = new ShardedCSTRequest(waitingCID, SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize());
-			cst.defineReplicas(otherReplicas, globalCkpPeriod, me);
-			cst.assignShards(firstReceivedStates, dt.getRecoverer().getState(this.lastCID, true).getSerializedState());
-			logger.debug("\n\t Starting State Transfer: \n" + cst);
-			System.out.println("Starting State Transfer: \n" + cst);
-
-			this.shardedCSTConfig = cst;
-			this.retries = 0;
-			this.statePlusLower = null;
-
-			ShardedCSTSMMessage cstMsg = new ShardedCSTSMMessage(me, waitingCID,TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
-			tomLayer.getCommunication().send(SVController.getCurrentViewOtherAcceptors(), cstMsg);
+//			if(firstReceivedStates.isEmpty()) {
+//				CSTRequestF1 cst = new CSTRequestF1(waitingCID);
+//				cst.defineReplicas(otherReplicas, globalCkpPeriod, me);
+//				cstRequest = cst;
+//				CSTSMMessage cstMsg = new CSTSMMessage(me, waitingCID, TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
+//
+//				logger.info("Sending state request to the other replicas {} ", cstMsg);
+//				tomLayer.getCommunication().send(SVController.getCurrentViewOtherAcceptors(), cstMsg);
+//			}
+//			else {
+				ShardedCSTRequest cst = new ShardedCSTRequest(waitingCID, SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize());
+				cst.defineReplicas(otherReplicas, globalCkpPeriod, me);
+				System.out.println("################## ASSIGNING SHARDS ##################");
+				cst.assignShards(firstReceivedStates, dt.getRecoverer().getState(this.lastCID, true).getSerializedState());
+				
+				logger.debug("\n\t Starting State Transfer: \n" + cst);
+				System.out.println("Starting State Transfer: \n" + cst);
+	
+				this.shardedCSTConfig = cst;
+				this.retries = 0;
+				this.statePlusLower = null;
+	
+				ShardedCSTSMMessage cstMsg = new ShardedCSTSMMessage(me, waitingCID,TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
+				tomLayer.getCommunication().send(SVController.getCurrentViewOtherAcceptors(), cstMsg);
+//			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -221,6 +233,8 @@ public class ShardedStateManager extends DurableStateManager {
 	}
 
 	private Integer[] detectFaultyShards() {
+		System.exit(-1);
+		
 		logger.info("detecting faulty shards");
 		List<Integer> faultyPages = new LinkedList<Integer>();
 		int shardSize = this.shardedCSTConfig.getShardSize();
@@ -294,75 +308,157 @@ public class ShardedStateManager extends DurableStateManager {
 		ShardedCSTState logUpperState = (ShardedCSTState)stateUpper;
 		ShardedCSTState logLowerState = (ShardedCSTState)stateLower;
 
-		byte[] chkpntData = new byte[shardedCSTConfig.getShardCount() * shardedCSTConfig.getShardSize()];
-
+		byte[] rebuiltData = new byte[shardedCSTConfig.getShardCount() * shardedCSTConfig.getShardSize()];
+		//TODO: current state should be copied directly into chkpntData
+		// unecessary 2 arraycopies
 		byte[] currState = dt.getRecoverer().getState(this.lastCID, true).getSerializedState();
-		System.arraycopy(currState, 0, chkpntData, 0, currState.length);
-
-		if(statePlusLower != null)
-			chkpntData = statePlusLower.getSerializedState();
 		
-		Integer[] commonShards = shardedCSTConfig.getCommonShards();
-		int shardSize = shardedCSTConfig.getShardSize();
-
-		int half = (commonShards.length/2);
-		if(commonShards.length%2 == 1)
-			half = ((commonShards.length+1)/2);
-		
-//		logger.debug("Current State: \n" + Arrays.toString(chkpntData));
-		logger.debug("Common Shards: " + commonShards.length);
-		logger.debug("HALF : " + half);
-//		logger.debug("LowerChkPnt Shards : " + Arrays.toString(logLowerState.getSerializedState()));
-//		logger.debug("UpperChkPnt Shards : " + Arrays.toString(logUpperState.getSerializedState()));
-		for(int i = 0;i < commonShards.length; i++) {
-//			logger.debug("Copying common shard {} to shard {}", i, commonShards[i]);
-			try {
-				if(i < half) {
-//					logger.debug("Copying Shard : " + commonShards[i] + " from lower");
-					System.arraycopy(logLowerState.getSerializedState(), i*shardSize, chkpntData, commonShards[i]*shardSize, shardSize);
-				}else {
-//					logger.debug("Copying Shard : " + commonShards[i] + " from upper");
-					System.arraycopy(logUpperState.getSerializedState(), (i-half)*shardSize, chkpntData, commonShards[i]*shardSize, shardSize);
-				}
-			} catch (Exception e) {
-				logger.error("Error copying shard during state rebuild. IGNORING IT FOR NOW");
-			}
+		if(currState != null) {
+			int length = currState.length > rebuiltData.length ? rebuiltData.length : currState.length;
+			System.arraycopy(currState, 0, rebuiltData, 0, length);
 		}
+		
+		if(statePlusLower != null)
+			rebuiltData = statePlusLower.getSerializedState();
 
 		Integer[] noncommonShards = shardedCSTConfig.getNonCommonShards();
-		logger.debug("NonCommon Shards : " + noncommonShards.length);
-//		logger.debug("ChkPnt Shards : " + Arrays.toString(logLowerState.getSerializedState()));
-		for(int i = 0;i < noncommonShards.length; i++) {
-			try {
-//				logger.debug("Copying Shard : " + noncommonShards[i] + " from chkpnt");
-				System.arraycopy(chkPntState.getSerializedState(), i*shardSize, chkpntData, noncommonShards[i]*shardSize, shardSize);
-			} catch (Exception e) {
-				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+		Integer[] commonShards = shardedCSTConfig.getCommonShards();
+		
+		int shardSize = shardedCSTConfig.getShardSize();
+        int nonCommon_size = noncommonShards.length;
+        int common_size = commonShards.length;
+        
+        int third = (nonCommon_size+common_size)/3;
+        int half;
+		if(common_size%2 == 1)
+			half = ((common_size+1)/2);
+		else 
+			half = (common_size/2);
+        
+    	if(nonCommon_size < third) {
+    		byte[] logLowerSer = logLowerState.getSerializedState();
+    		byte[] logUpperSer = logUpperState.getSerializedState();
+    		byte[] chkpntSer = chkPntState.getSerializedState();
+
+    		System.out.println("THIRD SIZE : " + third);
+    		
+    		int comm_count = third - nonCommon_size;
+    		System.out.println("CHKPNT Common: [0 .." + comm_count);
+    		for(int i = 0;i < comm_count; i++) {
+//    			System.out.println("copying Common["+ i +"] : " + commonShards[i]);
+    			try {
+    				System.arraycopy(chkpntSer, i*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+    			}
+    		}
+    		System.out.println("CHKPNT NonCommon: [0 .." + noncommonShards.length);    		
+    		for(int i = 0;i < noncommonShards.length; i++) {
+//    			System.out.println("copying nonCommon["+ i +"] : " + noncommonShards[i]);
+    			try {
+    				System.arraycopy(chkpntSer, (comm_count+i)*shardSize, rebuiltData, noncommonShards[i]*shardSize, shardSize);
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+    			}
+    		}
+
+
+    		System.out.println(comm_count);
+    		//lowerLog
+    		int count = 0;
+    		System.out.println("LOWERLOG Common: ["+comm_count +" .." + (comm_count+third));    		
+    		for(int i = comm_count; i< (comm_count+third) ; i++, count++) {
+//    			System.out.println("copying Common["+ (start+i) +"] : " + commonShards[i+start]);
+    			try {
+    				System.arraycopy(logLowerSer, count*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+    			}
+    		}
+    		System.out.println(count);
+    		//upperLog
+       		int size = (common_size) - (comm_count+third);
+    		count = 0;
+    		System.out.println("LOWERLOG Common: ["+(comm_count+third) +" .." + (comm_count+third+size));    		
+    		for(int i = (comm_count+third) ; i < (comm_count+third+size) ; i++, count++) {
+//    			System.out.println("copying Common["+ (start+i) +"] : " + commonShards[start+i]);
+    			try {
+    				System.arraycopy(logUpperSer, count*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+    			}
+    		}
+    		System.out.println(count);
+
+    	}
+    	else {
+    		byte[] logLowerSer = logLowerState.getSerializedState();
+    		byte[] logUpperSer = logUpperState.getSerializedState();
+    		for(int i = 0;i < commonShards.length; i++) {
+    			try {
+    				if(i < half) {
+    					System.arraycopy(logLowerSer, i*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
+    				}else {
+    					System.arraycopy(logUpperSer, (i-half)*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
+    				}
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    				logger.error("Error copying shard during state rebuild. IGNORING IT FOR NOW");
+    			}
+    		}
+    		byte[] chkpntSer = chkPntState.getSerializedState();
+    		for(int i = 0;i < noncommonShards.length; i++) {
+    			try {
+    				System.arraycopy(chkpntSer, i*shardSize, rebuiltData, noncommonShards[i]*shardSize, shardSize);
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+    			}
+    		}
+
+    	}
+		
+//		int i =rebuiltData.length-1;
+//		for(; i > 0; i--) {
+//			if(rebuiltData[i] != '\0')
+//				break;
+//		}
+//		byte[] trimedData = new byte[i+1];
+//		System.arraycopy(rebuiltData, 0, trimedData, 0, i+1);
+		
+//		if( i != chkpntData.length-1) {
+//			byte[] trimedData = new byte[i+1];
+//			System.arraycopy(chkpntData, 0, trimedData, 0, i+1);
+//			if(statePlusLower == null)
+//				return new ShardedCSTState(trimedData,
+//						TOMUtil.getBytes(((ShardedCSTState)chkpntState).getSerializedState()),
+//						stateLower.getLogLower(), ((ShardedCSTState)chkpntState).getLogLowerHash(), null, null,
+//						((ShardedCSTState)chkpntState).getCheckpointCID(), stateUpper.getCheckpointCID(), SVController.getStaticConf().getProcessId(), ((ShardedCSTState)chkpntState).getHashAlgo(), ((ShardedCSTState)chkpntState).getShardSize(), false);
+//			else {
+//				statePlusLower.setSerializedState(trimedData);
+//				return statePlusLower;
+//			}
+//		}
+//		else {
+			if(statePlusLower == null)
+				return new ShardedCSTState(rebuiltData,
+						TOMUtil.getBytes(((ShardedCSTState)chkpntState).getSerializedState()),
+						stateLower.getLogLower(), ((ShardedCSTState)chkpntState).getLogLowerHash(), null, null,
+						((ShardedCSTState)chkpntState).getCheckpointCID(), stateUpper.getCheckpointCID(), SVController.getStaticConf().getProcessId(), ((ShardedCSTState)chkpntState).getHashAlgo(), ((ShardedCSTState)chkpntState).getShardSize(), false);
+			else {
+				statePlusLower.setSerializedState(rebuiltData);
+				return statePlusLower;
 			}
-		}
-
-		int i =chkpntData.length-1;
-		for(; i > 0; i--) {
-			if(chkpntData[i] != '\0')
-				break;
-		}
-		
-		byte[] trimedData = new byte[i+1];
-		System.arraycopy(chkpntData, 0, trimedData, 0, i+1);
-//		logger.debug("TRIMMED CHECKPOINT STATE : \n" + Arrays.toString(chkpntData));
-
-		
-		if(statePlusLower == null)
-			return new ShardedCSTState(trimedData,
-					TOMUtil.getBytes(((ShardedCSTState)chkpntState).getSerializedState()),
-					stateLower.getLogLower(), ((ShardedCSTState)chkpntState).getLogLowerHash(), null, null,
-					((ShardedCSTState)chkpntState).getCheckpointCID(), stateUpper.getCheckpointCID(), SVController.getStaticConf().getProcessId(), ((ShardedCSTState)chkpntState).getHashAlgo(), ((ShardedCSTState)chkpntState).getShardSize());
-		else {
-			statePlusLower.setSerializedState(trimedData);
-			return statePlusLower;
-		}
+//		}	
 	}
 	
+	//TODO: increase concurrency
+	//TODO: increase concurrency
+	//TODO: increase concurrency
 	@Override
 	public void SMReplyDeliver(SMMessage msg, boolean isBFT) {
 		logger.trace("");
@@ -412,6 +508,7 @@ public class ShardedStateManager extends DurableStateManager {
 					in.close();
 					clientSocket.close();
 				} catch (Exception e) {
+					e.printStackTrace();
 					logger.error("Failed to transfer state", e);
 					// TODO: flag that the transfer failed for repeating the transfer process
 					return;
@@ -465,6 +562,8 @@ public class ShardedStateManager extends DurableStateManager {
 							logger.info("Installing state plus lower \n" + statePlusLower);
 							dt.getRecoverer().setState(statePlusLower);
 							byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
+							System.out.println("CURR: " + Arrays.toString(currentStateHash));
+							System.out.println("UPPR: " + Arrays.toString(stateUpper.getCheckpointHash()));
 							if (!Arrays.equals(currentStateHash, stateUpper.getCheckpointHash())) {
 								logger.info("INVALID Checkpoint + Lower Log hash"); 
 								validState = false;

@@ -51,7 +51,7 @@ public class DurableStateManager extends StateManager {
 	protected final static long INIT_TIMEOUT = 40000;
 	protected long timeout = INIT_TIMEOUT;
 
-	private CSTRequestF1 cstRequest;
+	protected CSTRequestF1 cstRequest;
 
 	//protected CSTState stateCkp;
 	protected CSTState stateLower;
@@ -146,7 +146,11 @@ public class DurableStateManager extends StateManager {
 			if (stateServer == null) {
 				stateServer = new StateSenderServer(port, dt.getRecoverer(), cstConfig);
 				new Thread(stateServer).start();
-			} 
+			}
+			else {
+				stateServer.updateServer(dt.getRecoverer(), cstConfig);
+			}
+
 
 			CSTSMMessage reply = new CSTSMMessage(myId, msg.getCID(),
 					TOMUtil.SM_REPLY, cstConfig, null,

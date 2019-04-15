@@ -69,6 +69,7 @@ public class TOMConfiguration extends Configuration {
     //Added by JSoares for Sharded State/ChkPnt Transfer
     private int shardSize;
     private String mrklTreeHashAlgo;
+    private boolean origcst;
     
     /** Creates a new instance of TOMConfiguration */
     public TOMConfiguration(int processId, KeyLoader loader) {
@@ -368,6 +369,14 @@ public class TOMConfiguration extends Configuration {
             } else {
             	mrklTreeHashAlgo = s;
             }
+            
+            s = (String) configs.remove("system.state.origcst");
+		    if (s != null) {
+		    	origcst = Boolean.parseBoolean(s);
+		    } else {
+		    	origcst = false;
+		    }
+
             	
         } catch (Exception e) {
             logger.error("Could not parse system configuration file",e);
@@ -507,7 +516,6 @@ public class TOMConfiguration extends Configuration {
 	}
 
 	public boolean isToLogParallel() {
-		// TODO Auto-generated method stub
 		return parallelLog;
 	}
 
@@ -553,8 +561,12 @@ public class TOMConfiguration extends Configuration {
 	}
 
 	public String getMrklTreeHashAlgo() {
-			return mrklTreeHashAlgo;
-	}
+		return mrklTreeHashAlgo;
+}
+
+	public boolean useOrigCST() {
+		return origcst;
+}
 
 	public MessageDigest getMrklTreeMessageDigest() {
 		try {

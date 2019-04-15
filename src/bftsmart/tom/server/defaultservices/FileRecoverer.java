@@ -17,6 +17,7 @@ package bftsmart.tom.server.defaultservices;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -114,15 +115,33 @@ public class FileRecoverer {
         byte[] toReturn = new byte[shards.length*shardSize];
         logger.debug("GETTING CHECKPOINT FROM " + ckpPath);
         if ((ckp = openLogFile(ckpPath)) != null) {
+        	
             byte[] ckpState = recoverCkpState(ckp);
+//            try {
+//	            FileOutputStream fos = new FileOutputStream(ckpPath+"state");
+//	            fos.write(ckpState);
+//	            fos.flush();
+//	            fos.close();
+//            } catch (Exception e) {
+//            	e.printStackTrace();
+//            }
+            		
 //            logger.debug(" CHECKPOINT : " + Arrays.toString(ckpState));
             
             for(int i = 0;i < shards.length; i++) {
             	int orig_offset = shards[i]*shardSize;
             	int dest_offset = i*shardSize;
             	int length = (orig_offset + shardSize) > ckpState.length ? (ckpState.length-orig_offset) : shardSize;
-                logger.debug("Reading State : state shard [{}] to CST shard [{}]", shards[i], i);                            	
-                System.arraycopy(ckpState, orig_offset, toReturn, dest_offset, length);
+            	if(length != shardSize) {
+            		byte[] tmp = new byte[shardSize];
+//            		System.out.println("################# length != shardSize #################");
+            		System.arraycopy(ckpState, orig_offset, tmp, 0, length);
+                    System.arraycopy(tmp, 0, toReturn, dest_offset, shardSize);
+            	}
+            	else {
+//                logger.debug("Reading State : state shard [{}] to CST shard [{}]", shards[i], i);                            	
+            		System.arraycopy(ckpState, orig_offset, toReturn, dest_offset, length);
+            	}
             }
 //            logger.debug(" TO SEND : " + Arrays.toString(toReturn));
             try {
@@ -158,7 +177,7 @@ public class FileRecoverer {
     public void recoverCkpHash(String ckpPath) {
         RandomAccessFile ckp = null;
 
-        System.out.println("GETTING HASH FROM CHECKPOINT" + ckpPath);
+//        System.out.println("GETTING HASH FROM CHECKPOINT" + ckpPath);
         if ((ckp = openLogFile(ckpPath)) != null) {
             byte[] ckpHash = null;
             try {
@@ -167,8 +186,8 @@ public class FileRecoverer {
                 int hashLength = ckp.readInt();
                 ckpHash = new byte[hashLength];
                 ckp.read(ckpHash);
-                System.out.println("--- Last ckp size: " + ckpSize + " Last ckp hash: "
-                        + Arrays.toString(ckpHash));
+//                System.out.println("--- Last ckp size: " + ckpSize + " Last ckp hash: "
+//                        + Arrays.toString(ckpHash));
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.println("State recover was aborted due to an unexpected exception");

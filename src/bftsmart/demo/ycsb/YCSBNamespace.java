@@ -13,26 +13,23 @@ public class YCSBNamespace extends TreeMap<String, YCSBTable> implements Externa
 
 	@Override
 	public void writeExternal(ObjectOutput out) throws IOException {
-    	System.out.println("############################################");
-    	System.out.println("########### write YCSBNamespace ############");
-    	System.out.println("############################################");
-
+		try {
     	int written = this.getClass().getName().length();
     	Set<String> keys = this.keySet();
+    	
     	out.writeInt(keys.size());
     	written += 4;
     	fillTo1k(written, out);
     	
     	for(String key : keys) {
-        	try {
 	    		out.writeUTF(key);
 	    		YCSBTable crt = get(key);
 	    		out.writeObject(crt);
-        	} catch (Exception e) {
-        		e.printStackTrace();
-            	break;
-        	}
     	}
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw e;
+		}
 	}
 
 	private void fillTo1k(int c, ObjectOutput out) throws IOException {
@@ -47,25 +44,21 @@ public class YCSBNamespace extends TreeMap<String, YCSBTable> implements Externa
 
 	@Override
 	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-    	System.out.println("############################################");
-    	System.out.println("############ read YCSBNamespace ############");
-    	System.out.println("############################################");
-    	
+		try {
     	int read = this.getClass().getName().length();
     	int keys = in.readInt();
     	read += 4;
     	readTo1k(read, in);
-    	System.out.println("Reading " + keys);
+    	
 		while(keys > 0) {
-	    	try {
     			String key = in.readUTF();
     			YCSBTable value = (YCSBTable) in.readObject();
         		this.put(key, value);
-	    	} catch (Exception e) {
-	    		e.printStackTrace();
-	    		break;
-	    	}
 	    	keys --;
  		}
+		}catch (Exception e) {
+			e.printStackTrace();
+			throw e;
+		}
 	}
 }

@@ -59,7 +59,7 @@ public class StateSenderServer implements Runnable {
 		}
 	}
 
-	public void updateServer(Recoverable recoverer, ShardedCSTRequest cstConfig) {
+	public void updateServer(Recoverable recoverer, CSTRequest cstConfig) {
 		this.coordinator = (DurabilityCoordinator) (recoverer);
 		this.request = cstConfig;
 	}

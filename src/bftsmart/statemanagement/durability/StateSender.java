@@ -44,7 +44,9 @@ public class StateSender implements Runnable {
 			ObjectOutputStream oos = new ObjectOutputStream(os);
 			oos.writeObject(state);
 			oos.flush();
+			os.flush();
 			oos.close();
+			os.close();
 			logger.debug("Replica state transfer successful (socket: {})", socket);
 		} catch (IOException e) {
 			logger.error("Error during state transfer",e);

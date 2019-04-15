@@ -109,13 +109,6 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 	
 	//defines the set of common shards between all replicas and defines which are assigned to each replica
 	public void assignShards(HashMap<Integer, ShardedCSTState> firstReceivedStates, byte[] localState) throws Exception {
-		MessageDigest md = null;
-		try {
-			md = MessageDigest.getInstance(hashAlgo);
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		}
-		MerkleTree localStateMT = MerkleTree.createTree(md, shardSize, localState);
 		
 		ShardedCSTState chkpntState = firstReceivedStates.get(checkpointReplica);
 		ShardedCSTState upperLogState = firstReceivedStates.get(logUpper);
@@ -130,7 +123,7 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 			System.out.println(chkpntState);
 			System.out.println(upperLogState);
 			System.out.println(lowerLogState);
-			
+			//TODO: deal with this
 			throw new Exception("chkpntState == null || upperLogState == null || lowerLogState == null");
 		}
 	
@@ -138,24 +131,50 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		MerkleTree upperLogMT = upperLogState.getMerkleTree();
 		MerkleTree lowerLogtMT = lowerLogState.getMerkleTree();
 
+		System.out.println("chkpntMT.getLeafCount() : " + chkpntMT.getLeafCount());
+		System.out.println("chkpntMT.getHeight() : " + chkpntMT.getHeight());
+
+		System.out.println("upperLogMT.getLeafCount() : " + upperLogMT.getLeafCount());
+		System.out.println("upperLogMT.getHeight() : " + upperLogMT.getHeight());
+
+		System.out.println("lowerLogtMT.getLeafCount() : " + lowerLogtMT.getLeafCount());
+		System.out.println("lowerLogtMT.getHeight() : " + lowerLogtMT.getHeight());
+
 		this.shardCount = chkpntMT.getLeafCount();		
 
 		//Common shards between other replicas
 		HashSet<Integer> commonShards = new HashSet<>();
 		commonShards.addAll(chkpntMT.getEqualPageIndexs(upperLogMT));
+		System.out.println("COMMON SHARDS : " + Arrays.toString(commonShards.toArray()));
 		commonShards.retainAll(chkpntMT.getEqualPageIndexs(lowerLogtMT));
+		System.out.println("COMMON SHARDS : " + Arrays.toString(commonShards.toArray()));
 		
+		// Set of all shards
 		Integer[] shards = new Integer[this.shardCount];
 		for(int i = 0;i < shardCount; i++)
 			shards[i] = i;
+		
 		HashSet<Integer> nonCommonShards = new HashSet<Integer>(Arrays.asList(shards));
 		nonCommonShards.removeAll(commonShards);
 		this.nonCommonShards = nonCommonShards.toArray(new Integer[0]);
-
+		System.out.println("NON COMMON SHARDS : " + Arrays.toString(this.nonCommonShards));
+		
+		MessageDigest md = null;
+		try {
+			md = MessageDigest.getInstance(hashAlgo);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		//remove currently available shards in common shards set 
+		MerkleTree localStateMT = MerkleTree.createTree(md, shardSize, localState);
+		System.out.println("localStateMT : " + localStateMT);
+		System.out.println("localStateMT.getLeafCount() : " + localStateMT.getLeafCount());
+		System.out.println("localStateMT.getHeight() : " + localStateMT.getHeight());
 		commonShards.removeAll(localStateMT.getEqualPageIndexs(upperLogMT));
 		commonShards.removeAll(localStateMT.getEqualPageIndexs(lowerLogtMT));
 		this.commonShards = commonShards.toArray(new Integer[0]);
 
+		System.out.println("COMMON SHARDS : " + Arrays.toString(this.commonShards));
 	}
 
 	public void reAssignShards(Integer[] faultyShards) {

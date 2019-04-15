@@ -3,7 +3,6 @@ package bftsmart.statemanagement.durability.shard;
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 
 import bftsmart.statemanagement.ApplicationState;
 import bftsmart.statemanagement.durability.CSTState;
@@ -19,18 +18,19 @@ public class ShardedCSTState extends CSTState implements ApplicationState, Seria
 	private final int shardSize;
 	
 	public ShardedCSTState(byte[] state, byte[] hashCheckpoint, CommandsInfo[] logLower, byte[] hashLogLower,
-			CommandsInfo[] logUpper, byte[] hashLogUpper, int checkpointCID, int currentCID, int pid, String hashAlgo, int shardSize) {
+			CommandsInfo[] logUpper, byte[] hashLogUpper, int checkpointCID, int currentCID, int pid, String hashAlgo, int shardSize, boolean buildMT) {
 		
 		super(state, hashCheckpoint, logLower, hashLogLower, logUpper, hashLogUpper, checkpointCID, currentCID, pid);
-		if(state != null) {
+		this.hashAlgo = hashAlgo;
+		this.shardSize = shardSize;
+		// only build when necessary
+		if(buildMT) { 
 			try {
 				chkPntMrklTree = MerkleTree.createTree(MessageDigest.getInstance(hashAlgo), shardSize, state);
 			} catch (NoSuchAlgorithmException e) {
 				e.printStackTrace();
 			}
 		}
-		this.hashAlgo = hashAlgo;
-		this.shardSize = shardSize;
 	}
 
 	@Override
@@ -43,7 +43,6 @@ public class ShardedCSTState extends CSTState implements ApplicationState, Seria
 				+ hashAlgo + ", shardSize=" + shardSize + "]";
 	}
 
-	// do not know if this is replica ID or not
 	public int getReplicaID() {
 		return pid;
 	}
