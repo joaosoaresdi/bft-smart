@@ -15,7 +15,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import bftsmart.consensus.Consensus;
 import bftsmart.consensus.Epoch;
@@ -23,7 +22,6 @@ import bftsmart.consensus.messages.ConsensusMessage;
 import bftsmart.consensus.messages.MessageFactory;
 import bftsmart.reconfiguration.views.View;
 import bftsmart.statemanagement.SMMessage;
-import bftsmart.statemanagement.durability.CSTRequestF1;
 import bftsmart.statemanagement.durability.CSTSMMessage;
 import bftsmart.statemanagement.durability.CSTState;
 import bftsmart.statemanagement.durability.DurableStateManager;
