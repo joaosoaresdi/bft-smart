@@ -276,6 +276,7 @@ public class DurableStateManager extends StateManager {
 						// validate lower log
 						if (Arrays.equals(((CSTState)chkpntState).getLogLowerHash(), lowerLogHash)) {
 							validState = true;
+							logger.warn("Lower log matches checkpoint");
 						} else {
 							logger.warn("Lower log does not match checkpoint");
 						}
@@ -285,7 +286,7 @@ public class DurableStateManager extends StateManager {
 							validState = false;
 							logger.error("Upper log does not match checkpoint");
 						} else {
-							logger.warn("Upper log does not match checkpoint");
+							logger.warn("Upper log matches checkpoint");
 						}
 
 						CSTState statePlusLower = new CSTState(((CSTState)chkpntState).getSerializedState(),
