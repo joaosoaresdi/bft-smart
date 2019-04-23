@@ -70,6 +70,7 @@ public class DiskStateLog extends StateLog {
 			 * log.setLength(TEN_MB); log.seek(0);
 			 */
 		} catch (FileNotFoundException e) {
+			e.printStackTrace();
 			logger.error("Failed to create log file",e);
 		}
 	}
@@ -114,7 +115,7 @@ public class DiskStateLog extends StateLog {
 			log.seek(log.length() - 2 * INT_BYTE_SIZE);// Next write will overwrite
 													// the EOF mark
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			e.printStackTrace();
 			logger.error("Failed to write command to disk",e);
 	    }
 	}
@@ -150,10 +151,10 @@ public class DiskStateLog extends StateLog {
 				createLogFile();
 			
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
+			e.printStackTrace();
 			logger.error("Failed to open checkpoint file",e);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			e.printStackTrace();
 			logger.error("Failed to write checkpoint to disk",e);
 		} finally {
 			checkpointLock.unlock();
@@ -177,6 +178,7 @@ public class DiskStateLog extends StateLog {
 				log.close();
 			new File(logPath).delete();
 		} catch (IOException e) {
+			e.printStackTrace();
 			logger.error("Failed to delete log file",e);
 		}
 	}
@@ -250,6 +252,7 @@ public class DiskStateLog extends StateLog {
 				logger.info("Replica " + ckpReplicaIndex + " took checkpoint. My current log pointer is " + log.getFilePointer());
 				logPointers.put(ckpReplicaIndex, log.getFilePointer());
 			} catch (IOException e) {
+				e.printStackTrace();
 				logger.error("Failed to get file pointer",e);
 			}
 		}

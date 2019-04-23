@@ -241,7 +241,7 @@ public abstract class StateManager {
 		SMMessage currentCID;
 
 		while (isInitializing) {
-			logger.info("Sending ConsensusID query with QueryID {} to replicas {}", queryID, target);
+			logger.debug("Sending ConsensusID query with QueryID {} to replicas {}", queryID, target);
 			queryID++;
 			currentCID = new StandardSMMessage(me, queryID, TOMUtil.SM_ASK_INITIAL, 0, null, null, 0, 0);
 			logger.info("Sending ConsensusID query {}", currentCID);

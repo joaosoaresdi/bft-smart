@@ -128,7 +128,6 @@ public class DurableStateLog extends StateLog {
             log.write(bf.array());
             log.seek(log.length() - 2 * INT_BYTE_SIZE);// Next write will overwrite the EOF mark
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
@@ -162,7 +161,6 @@ public class DurableStateLog extends StateLog {
             logBeforeGlobal.write(bf.array());
             logBeforeGlobal.seek(logBeforeGlobal.length() - 2 * INT_BYTE_SIZE);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
@@ -198,7 +196,6 @@ public class DurableStateLog extends StateLog {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         } finally {
             checkpointLock.unlock();

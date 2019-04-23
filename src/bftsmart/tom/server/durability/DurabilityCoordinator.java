@@ -280,6 +280,7 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 					installSnapshot(state.getSerializedState());
 				} catch (Exception e) {
 					e.printStackTrace();
+					logger.error("Failed to install serialized state (snapshot)",e);
 				}
 			}
 
@@ -299,6 +300,7 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 					appExecuteBatch(commands, msgCtx);
 					saveCommands(commands, msgCtx, true, lastCID < globalCheckpointPeriod);
 				} catch (Exception e) {
+					e.printStackTrace();
 					logger.error("Failed to process and verify batched requests",e);
 				}
 

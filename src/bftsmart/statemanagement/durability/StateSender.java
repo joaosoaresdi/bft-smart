@@ -50,11 +50,13 @@ public class StateSender implements Runnable {
 			os.close();
 			logger.debug("Replica state transfer successful (socket: {})", socket);
 		} catch (IOException e) {
+			e.printStackTrace();
 			logger.error("Error during state transfer",e);
 		} finally {
 			try {
 				socket.close();
 			} catch (IOException e) {
+				e.printStackTrace();
 				logger.error("Error closing state transfer socket",e);
 				socket = null;
 			}

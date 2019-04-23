@@ -40,7 +40,6 @@ public class StateSenderServer implements Runnable {
 		try {
 			server = new ServerSocket(port);
 		} catch (IOException e) {
-			// TODO: This needs to be treated
 			logger.error("Could not open server socket", e);
 		}
 	}
@@ -55,6 +54,7 @@ public class StateSenderServer implements Runnable {
 				StateSender sender = new StateSender(socket, state);
 				new Thread(sender).start();
 			} catch (IOException e) {
+				e.printStackTrace();
 				logger.error("Problem executing StateSenderServer thread", e);
 			}
 		}
