@@ -39,6 +39,7 @@ public class StateSender implements Runnable {
 	
 	@Override
 	public void run() {
+		logger.debug("State transfer started (socket: {})", socket);
 		try {
 			OutputStream os = socket.getOutputStream();
 			ObjectOutputStream oos = new ObjectOutputStream(os);
