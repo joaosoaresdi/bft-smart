@@ -89,14 +89,13 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
 	int shardSize = TOMConfiguration.staticLoad().getShardSize();
 	
 	private void fillToShardSize(int c, ObjectOutput out) throws IOException {
-		System.out.println("FILLING : " + (shardSize - c));
-		
+//		System.out.println("FILLING : " + (shardSize - c));		
 		for(int i = c; i < shardSize; i++)
 			out.write('\0');
 	}
 
 	private void readToShardSize(int c, ObjectInput in) throws IOException {
-		System.out.println("DISCARDING : " + (shardSize - c));
+//		System.out.println("DISCARDING : " + (shardSize - c));
 		for(int i = c; i < shardSize; i++) {
 			int x = in.read();
 		}
