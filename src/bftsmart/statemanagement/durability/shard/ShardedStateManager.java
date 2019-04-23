@@ -13,6 +13,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import bftsmart.consensus.Consensus;
 import bftsmart.consensus.Epoch;
@@ -37,7 +40,8 @@ import merkletree.TreeNode;
 public class ShardedStateManager extends DurableStateManager {
 
 	// replica states received during the first phase of the CST protocol
-	private HashMap<Integer, ShardedCSTState> firstReceivedStates = new HashMap<>();
+	
+	private ConcurrentHashMap<Integer, ShardedCSTState> firstReceivedStates = new ConcurrentHashMap<>();
 
 	// state transfer configuration used for synchronisation phase
 	private ShardedCSTRequest shardedCSTConfig;	
@@ -50,6 +54,7 @@ public class ShardedStateManager extends DurableStateManager {
 	public void currentConsensusIdAsked(int sender, int id) {
 		logger.trace("");
 		logger.debug("Received ConsensusID query from {} with QueryID {}", sender, id);
+		
 		int me = SVController.getStaticConf().getProcessId();
 		DurableStateLog log = ((DurableStateLog)dt.getRecoverer().getLog());
 
@@ -66,22 +71,27 @@ public class ShardedStateManager extends DurableStateManager {
 		tomLayer.getCommunication().send(new int[] { sender }, currentCIDReply);
 	}
 
+	private static AtomicBoolean fence = new AtomicBoolean(false);
+	
 	@Override
-	public synchronized void currentConsensusIdReceived(SMMessage smsg) {
+	public void currentConsensusIdReceived(SMMessage smsg) {
 		logger.trace("");
 		if (!isInitializing || waitingCID > -1 || queryID != smsg.getCID()) {
-			logger.info("Ignoring ConsensusID request {} (expecting ID {})", smsg.toString(), queryID);
+			logger.debug("Ignoring ConsensusID request {} (expecting ID {})", smsg.toString(), queryID);
 			return;
 		}
 		logger.debug("Received ConsensusID request {} (expecting ID {})", smsg.toString(), queryID);
 
 		firstReceivedStates.put(smsg.getSender(), (ShardedCSTState)smsg.getState());
-
-		Map<Integer, Integer> replies = queries.get(queryID);
-		if (replies == null) {
-			replies = new HashMap<>();
-			queries.put(queryID, replies);
+		
+		synchronized (this) {
+			Map<Integer, Integer> replies = queries.get(queryID);
+			if (replies == null) {
+				replies = new ConcurrentHashMap<Integer,Integer> ();
+				queries.put(queryID, replies);
+			}
 		}
+		Map<Integer, Integer> replies = queries.get(queryID);
 		replies.put(smsg.getSender(), smsg.getState().getLastCID());
 
 		if (replies.size() > SVController.getQuorum()) {
@@ -98,30 +108,33 @@ public class ShardedStateManager extends DurableStateManager {
 
 			for (int cid : cids.keySet()) {
 				if (cids.get(cid) > SVController.getQuorum()) {
-					logger.info("There is a quorum for CID {}", cid);
-					queries.clear();
-
-					if (cid == lastCID) {
-						logger.debug("Replica state is up to date");
-
-						firstReceivedStates.clear();
-
-						dt.deliverLock();
-						isInitializing = false;
-						tomLayer.setLastExec(cid);
-						dt.canDeliver();
-						dt.deliverUnlock();
-						break;
-					} else {
-						// ask for state
-						logger.debug("Replica state is outdated...");
-						System.out.println("Replica State is outdated...");
-						lastCID = cid + 1;
-						if (waitingCID == -1) {
-							waitingCID = cid;
-							requestState();
+					if(fence.compareAndSet(false, true)) { // only one can enter per queryID 
+						logger.info("There is a quorum for CID {}", cid);
+						queries.clear();
+	
+						if (cid == lastCID) {
+							logger.debug("Replica state is up to date");
+	
+							firstReceivedStates.clear();
+	
+							dt.deliverLock();
+							isInitializing = false;
+							tomLayer.setLastExec(cid);
+							dt.canDeliver();
+							dt.deliverUnlock();
+							break;
+						} else {
+							// ask for state
+							logger.debug("Replica state is outdated...");
+							System.out.println("Replica State is outdated...");
+							lastCID = cid + 1;
+							if (waitingCID == -1) {
+								waitingCID = cid;
+								requestState();
+							}
 						}
 					}
+					fence.set(false);
 				}
 			}
 		}
@@ -223,7 +236,7 @@ public class ShardedStateManager extends DurableStateManager {
 
 	private boolean validatePreCSTState(CommandsInfo[] upperLog, byte[] upperLogHash) {
 		byte[] logHashFromCkpSender = ((ShardedCSTState)chkpntState).getLogUpperHash();
-		byte[] logHashFromLowerSender = stateLower.getLogUpperHash();
+		byte[] logHashFromLowerSender = stateLower.get().getLogUpperHash();
 		boolean haveState = false;
 		haveState = Arrays.equals(upperLogHash, logHashFromCkpSender);
 		if (haveState) {
@@ -294,7 +307,7 @@ public class ShardedStateManager extends DurableStateManager {
 			shards = this.shardedCSTConfig.getCommonShards();
     		//lowerLog
 
-			state = firstReceivedStates.get(((ShardedCSTState)stateLower).getReplicaID());
+			state = firstReceivedStates.get(((ShardedCSTState)stateLower.get()).getReplicaID());
 			mt = state.getMerkleTree();
 			nodes = mt.getLeafs();
 			data = state.getSerializedState();
@@ -314,7 +327,7 @@ public class ShardedStateManager extends DurableStateManager {
     		}
 
     		//upperLog
-			state = firstReceivedStates.get(((ShardedCSTState)stateUpper).getReplicaID());
+			state = firstReceivedStates.get(((ShardedCSTState)stateUpper.get()).getReplicaID());
 			mt = state.getMerkleTree();
 			nodes = mt.getLeafs();
 			data = state.getSerializedState();
@@ -356,7 +369,7 @@ public class ShardedStateManager extends DurableStateManager {
 	
 			shards = this.shardedCSTConfig.getCommonShards();
 
-			state = firstReceivedStates.get(((ShardedCSTState)stateLower).getReplicaID());
+			state = firstReceivedStates.get(((ShardedCSTState)stateLower.get()).getReplicaID());
 			mt = state.getMerkleTree();
 			nodes = mt.getLeafs();
 			data = state.getSerializedState();
@@ -375,7 +388,7 @@ public class ShardedStateManager extends DurableStateManager {
 			}
 	
 			
-			state = firstReceivedStates.get(((ShardedCSTState)stateUpper).getReplicaID());
+			state = firstReceivedStates.get(((ShardedCSTState)stateUpper.get()).getReplicaID());
 			mt = state.getMerkleTree();
 			nodes = mt.getLeafs();
 			data = state.getSerializedState();
@@ -400,8 +413,8 @@ public class ShardedStateManager extends DurableStateManager {
 	private ShardedCSTState rebuildCSTState() {
 		logger.debug("rebuilding state");
 		ShardedCSTState chkPntState = (ShardedCSTState)chkpntState;
-		ShardedCSTState logUpperState = (ShardedCSTState)stateUpper;
-		ShardedCSTState logLowerState = (ShardedCSTState)stateLower;
+		ShardedCSTState logUpperState = (ShardedCSTState)stateUpper.get();
+		ShardedCSTState logLowerState = (ShardedCSTState)stateLower.get();
 
 		byte[] rebuiltData = new byte[shardedCSTConfig.getShardCount() * shardedCSTConfig.getShardSize()];
 		//TODO: current state should be copied directly into chkpntData
@@ -530,8 +543,8 @@ public class ShardedStateManager extends DurableStateManager {
 			if(statePlusLower == null)
 				return new ShardedCSTState(rebuiltData,
 						TOMUtil.getBytes(((ShardedCSTState)chkpntState).getSerializedState()),
-						stateLower.getLogLower(), ((ShardedCSTState)chkpntState).getLogLowerHash(), null, null,
-						((ShardedCSTState)chkpntState).getCheckpointCID(), stateUpper.getCheckpointCID(), SVController.getStaticConf().getProcessId(), ((ShardedCSTState)chkpntState).getHashAlgo(), ((ShardedCSTState)chkpntState).getShardSize(), false);
+						stateLower.get().getLogLower(), ((ShardedCSTState)chkpntState).getLogLowerHash(), null, null,
+						((ShardedCSTState)chkpntState).getCheckpointCID(), stateUpper.get().getCheckpointCID(), SVController.getStaticConf().getProcessId(), ((ShardedCSTState)chkpntState).getHashAlgo(), ((ShardedCSTState)chkpntState).getShardSize(), false);
 			else {
 				statePlusLower.setSerializedState(rebuiltData);
 				return statePlusLower;
@@ -542,14 +555,19 @@ public class ShardedStateManager extends DurableStateManager {
 	//TODO: increase concurrency
 	//TODO: increase concurrency
 	//TODO: increase concurrency
+	private static AtomicBoolean CSTfence = new AtomicBoolean(false);
 	@Override
 	public void SMReplyDeliver(SMMessage msg, boolean isBFT) {
 		logger.trace("");
 
-		lockTimer.lock();
 		ShardedCSTSMMessage reply = (ShardedCSTSMMessage)msg;
 		if (SVController.getStaticConf().isStateTransferEnabled()) {
-			logger.info("Received State Transfer Response from " + msg.getSender());
+			logger.debug("The state transfer protocol is enabled");
+			logger.debug("Received a CSTMessage {} ", reply);
+
+			logger.debug("\n My current state is : \n \t waiting CID : " + waitingCID +
+					"\n \t last CID : " + lastCID + 
+					"\n \t query ID :  " + queryID);
 
 			if (waitingCID != -1 && reply.getCID() == waitingCID) {
 				int currentRegency = -1;
@@ -558,20 +576,22 @@ public class ShardedStateManager extends DurableStateManager {
 				CertifiedDecision currentProof = null;
 
 				if (!appStateOnly) {
-					receivedRegencies.put(reply.getSender(), reply.getRegency());
-					receivedLeaders.put(reply.getSender(), reply.getLeader());
-					receivedViews.put(reply.getSender(), reply.getView());
-
-					if (enoughRegencies(reply.getRegency())) {
-						currentRegency = reply.getRegency();
-					}
-					if (enoughLeaders(reply.getLeader())) {
-						currentLeader = reply.getLeader();
-					}
-					if (enoughViews(reply.getView())) {
-						currentView = reply.getView();
-						if (!currentView.isMember(SVController.getStaticConf().getProcessId())) {
-							logger.warn("Not a member!");
+					synchronized (this) {
+						receivedRegencies.put(reply.getSender(), reply.getRegency());
+						receivedLeaders.put(reply.getSender(), reply.getLeader());
+						receivedViews.put(reply.getSender(), reply.getView());
+		
+						if (enoughRegencies(reply.getRegency())) {
+							currentRegency = reply.getRegency();
+						}
+						if (enoughLeaders(reply.getLeader())) {
+							currentLeader = reply.getLeader();
+						}
+						if (enoughViews(reply.getView())) {
+							currentView = reply.getView();
+							if (!currentView.isMember(SVController.getStaticConf().getProcessId())) {
+								logger.warn("Not a member!");
+							}
 						}
 					}
 				} else {
@@ -599,262 +619,270 @@ public class ShardedStateManager extends DurableStateManager {
 
 				receivedStates.put(reply.getSender(), stateReceived);
 				if (reply.getSender() == shardedCSTConfig.getCheckpointReplica()) {
-					logger.info("Received State from Checkpoint Replica\n");
+					logger.debug("Received State from Checkpoint Replica\n");
 					this.chkpntState = stateReceived;
 				}
 				if (reply.getSender() == shardedCSTConfig.getLogLower()) {
-					logger.info("Received State from Lower Log Replica\n");
-					this.stateLower = stateReceived;
+					logger.debug("Received State from Lower Log Replica\n");
+					stateLower.set(stateReceived);
 				}
 				if (reply.getSender() == shardedCSTConfig.getLogUpper()) {
-					logger.info("Received State from Upper Log Replica\n");
-					this.stateUpper = stateReceived;
+					logger.debug("Received State from Upper Log Replica\n");
+					stateUpper.set(stateReceived);
 				}
 
 				if (receivedStates.size() == 3) {
-					logger.debug("Validating Received State\n");
-					CommandsInfo[] upperLog = stateUpper.getLogUpper();
-					byte[] upperLogHash = CommandsInfo.computeHash(upperLog);
-
-					boolean validState = false;
-					if (reply.getCID() < SVController.getStaticConf().getGlobalCheckpointPeriod()) {
-						validState = validatePreCSTState(upperLog, upperLogHash);
-					}
-					else {
-						CommandsInfo[] lowerLog = stateLower.getLogLower();
-						byte[] lowerLogHash = CommandsInfo.computeHash(lowerLog);
-
-						// validate lower log -> hash(lowerLog) == lowerLogHash
-						if (Arrays.equals(((CSTState)chkpntState).getLogLowerHash(), lowerLogHash)) {
-							validState = true;
-							logger.debug("VALID Lower Log hash");
-						} else {
-							logger.debug("INVALID Lower Log hash");
-						}
-						// validate upper log -> hash(upperLog) == upperLogHash
-						if (!Arrays.equals(((CSTState)chkpntState).getLogUpperHash(), upperLogHash) ) {
-							validState = false;
-							logger.debug("INVALID Upper Log hash");
-						} else {
-							logger.debug("VALID Upper Log hash");
-						}
-
-						if (validState) { // validate checkpoint
-							statePlusLower = rebuildCSTState();
-							logger.debug("Intalling Checkpoint and replying Lower Log");
-							logger.debug("Installing state plus lower \n" + statePlusLower);
-							dt.getRecoverer().setState(statePlusLower);
-							byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
-							System.out.println("CURR: " + Arrays.toString(currentStateHash));
-							System.out.println("UPPR: " + Arrays.toString(stateUpper.getCheckpointHash()));
-							if (!Arrays.equals(currentStateHash, stateUpper.getCheckpointHash())) {
-								logger.debug("INVALID Checkpoint + Lower Log hash"); 
-								validState = false;
-							} else {
-								logger.debug("VALID Checkpoint + Lower Log  hash");
-							}
+					if(CSTfence.compareAndSet(false, true)) { // only one enters here
+						lockTimer.lock();
+						// wait for every response of every replica						
+						// should use monitors
+						while(stateLower.get() == null);
+						while(stateUpper.get() == null);
+						
+						logger.debug("Validating Received State\n");
+						CommandsInfo[] upperLog = stateUpper.get().getLogUpper();
+						byte[] upperLogHash = CommandsInfo.computeHash(upperLog);
+	
+						boolean validState = false;
+						if (reply.getCID() < SVController.getStaticConf().getGlobalCheckpointPeriod()) {
+							validState = validatePreCSTState(upperLog, upperLogHash);
 						}
 						else {
-							logger.debug("Terminating transfer process due to faulty Lower and Upper Logs");
-						}
-					}
-					
-					currentProof = this.stateUpper.getCertifiedDecision(SVController);
-					
-					logger.info("CURRENT Regency = " + currentRegency);
-					logger.info("CURRENT Leader = " + currentLeader);
-					logger.info("CURRENT View = " + currentView);
-					logger.info("CURRENT PROOF = " + currentProof);
-					logger.info("validState = " + validState);
-					logger.info("appStateOnly = " + appStateOnly);
-					
-					
-					if (/*currentRegency > -1 &&*/ currentLeader > -1
-							&& currentView != null && validState && (!isBFT || currentProof != null || appStateOnly)) {
-						logger.debug("---- RECEIVED VALID STATE ----");
-
-						tomLayer.getSynchronizer().getLCManager().setLastReg(currentRegency);
-						tomLayer.getSynchronizer().getLCManager().setNextReg(currentRegency);
-						tomLayer.getSynchronizer().getLCManager().setNewLeader(currentLeader);
-
-						tomLayer.execManager.setNewLeader(currentLeader);
-
-						if (currentProof != null && !appStateOnly) {
-							logger.debug("Trying to install proof for consensus " + waitingCID);
-
-							Consensus cons = execManager.getConsensus(waitingCID);
-							Epoch e = null;
-
-							for (ConsensusMessage cm : currentProof.getConsMessages()) {
-								e = cons.getEpoch(cm.getEpoch(), true, SVController);
-								if (e.getTimestamp() != cm.getEpoch()) {
-									logger.debug("Strange... proof contains messages from more than just one epoch");
-									e = cons.getEpoch(cm.getEpoch(), true, SVController);
-								}
-								e.addToProof(cm);
-								if (cm.getType() == MessageFactory.ACCEPT) {
-									e.setAccept(cm.getSender(), cm.getValue());
-								}
-								else if (cm.getType() == MessageFactory.WRITE) {
-									e.setWrite(cm.getSender(), cm.getValue());
-								}
-							}
-
-							if (e != null) {
-								byte[] hash = tomLayer.computeHash(currentProof.getDecision());
-								e.propValueHash = hash;
-								e.propValue = currentProof.getDecision();
-								e.deserializedPropValue = tomLayer.checkProposedValue(currentProof.getDecision(), false);
-								cons.decided(e, false);
-								logger.info("Successfully installed proof for consensus " + waitingCID);
+							CommandsInfo[] lowerLog = stateLower.get().getLogLower();
+							byte[] lowerLogHash = CommandsInfo.computeHash(lowerLog);
+	
+							// validate lower log -> hash(lowerLog) == lowerLogHash
+							if (Arrays.equals(((CSTState)chkpntState).getLogLowerHash(), lowerLogHash)) {
+								validState = true;
+								logger.debug("VALID Lower Log hash");
 							} else {
-								//NOTE [JSoares]: if this happens shouldn't the transfer process stop????
-								logger.debug("Failed to install proof for consensus " + waitingCID);
+								logger.debug("INVALID Lower Log hash");
 							}
-						}
-
-						// I might have timed out before invoking the state transfer, so
-						// stop my re-transmission of STOP messages for all regencies up to the current one
-						if (currentRegency > 0) {
-							tomLayer.getSynchronizer().removeSTOPretransmissions(currentRegency - 1);
-						}
-
-						logger.debug("Trying to acquire deliverlock");
-						dt.deliverLock();
-						logger.debug("Successfuly acquired deliverlock");
-
-						// this makes the isRetrievingState() evaluates to false
-						waitingCID = -1;
-						
-						// JSoares Modified, since the state sent by the UpperLog replica contains checkpoint data 
-						// and the original transfer process is not expecting it
-						stateUpper.setSerializedState(null);
-						
-						logger.debug("Updating state with Upper Log operations");
-						dt.update(stateUpper);
-
-						// Deal with stopped messages that may come from
-						// synchronization phase
-						if (!appStateOnly && execManager.stopped()) {
-							Queue<ConsensusMessage> stoppedMsgs = execManager.getStoppedMsgs();
-							for (ConsensusMessage stopped : stoppedMsgs) {
-								if (stopped.getNumber() > chkpntState.getLastCID()) {
-									execManager.addOutOfContextMessage(stopped);
-								}
+							// validate upper log -> hash(upperLog) == upperLogHash
+							if (!Arrays.equals(((CSTState)chkpntState).getLogUpperHash(), upperLogHash) ) {
+								validState = false;
+								logger.debug("INVALID Upper Log hash");
+							} else {
+								logger.debug("VALID Upper Log hash");
 							}
-							execManager.clearStopped();
-							execManager.restart();
-						}
-
-						logger.debug("Processing out of context messages");
-						tomLayer.processOutOfContext();
-
-						if (SVController.getCurrentViewId() != currentView.getId()) {
-							logger.info("Installing current view!");
-							SVController.reconfigureTo(currentView);
-						}
-
-						isInitializing = false;
-
-						dt.canDeliver();
-						dt.deliverUnlock();
-
-						logger.info("State Transfer process completed successfuly!");
-						
-						reset();
-						firstReceivedStates.clear();
-						statePlusLower = null;
-						
-						tomLayer.requestsTimer.Enabled(true);
-						tomLayer.requestsTimer.startTimer();
-
-						if (stateTimer != null) {
-							stateTimer.cancel();
-						}
-
-						if (appStateOnly) {
-							appStateOnly = false;
-							tomLayer.getSynchronizer().resumeLC();
-						}
-						CST_end_time = System.currentTimeMillis();
-						
-						System.out.println("State Transfer process completed successfuly!");
-						System.out.println("State Transfer duration: " + (CST_end_time - CST_start_time));
-						
-					} else if (chkpntState == null
-							&& (SVController.getCurrentViewN() / 2) < getReplies()) {
-						logger.debug("---- DIDNT RECEIVE STATE ----");
-
-						waitingCID = -1;
-						reset();
-						if (appStateOnly) {
-							requestState();
-						}
-						if (stateTimer != null) {
-							stateTimer.cancel();
-						}
-					} else if (!validState) {
-						logger.debug("---- RECEIVED INVALID STATE  ----");
-
-						retries ++;
-						if(retries < 3) {							
-							Integer[] faultyShards = detectFaultyShards();
-							if(faultyShards.length == 0) { 
-								logger.debug("Cannot detect faulty shards. Will restart protocol");
-								reset();
-//								firstReceivedStates.clear();
-//								statePlusLower = null;
-								requestState();
-								if (stateTimer != null) {
-									stateTimer.cancel();
+	
+							if (validState) { // validate checkpoint
+								statePlusLower = rebuildCSTState();
+								logger.debug("Intalling Checkpoint and replying Lower Log");
+								logger.debug("Installing state plus lower \n" + statePlusLower);
+								dt.getRecoverer().setState(statePlusLower);
+								byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
+								System.out.println("CURR: " + Arrays.toString(currentStateHash));
+								System.out.println("UPPR: " + Arrays.toString(stateUpper.get().getCheckpointHash()));
+								if (!Arrays.equals(currentStateHash, stateUpper.get().getCheckpointHash())) {
+									logger.debug("INVALID Checkpoint + Lower Log hash"); 
+									validState = false;
+								} else {
+									logger.debug("VALID Checkpoint + Lower Log  hash");
 								}
 							}
 							else {
-								logger.debug("Retrying State Transfer for the {} time", retries);
-								
-                                reset();
-								if (stateTimer != null) {
-									stateTimer.cancel();
-								}
-								
-                                this.shardedCSTConfig.reAssignShards(faultyShards);
-                        		logger.debug("Requesting Faulty Shards: \n" + shardedCSTConfig);
-
-                                int me = SVController.getStaticConf().getProcessId();
-                                
-								ShardedCSTSMMessage cstMsg = new ShardedCSTSMMessage(me, waitingCID,TOMUtil.SM_REQUEST, this.shardedCSTConfig, null, null, -1, -1);
-								tomLayer.getCommunication().send(SVController.getCurrentViewOtherAcceptors(), cstMsg);
-
-								TimerTask stateTask = new TimerTask() {
-									public void run() {                
-										CSTSMMessage msg = new CSTSMMessage(-1, waitingCID,TOMUtil.TRIGGER_SM_LOCALLY, null, null, null, -1, -1);
-										triggerTimeout(msg);
+								logger.debug("Terminating transfer process due to faulty Lower and Upper Logs");
+							}
+						}
+						
+						currentProof = stateUpper.get().getCertifiedDecision(SVController);
+						
+						logger.info("CURRENT Regency = " + currentRegency);
+						logger.info("CURRENT Leader = " + currentLeader);
+						logger.info("CURRENT View = " + currentView);
+						logger.info("CURRENT PROOF = " + currentProof);
+						logger.info("validState = " + validState);
+						logger.info("appStateOnly = " + appStateOnly);
+						
+						
+						if (/*currentRegency > -1 &&*/ currentLeader > -1
+								&& currentView != null && validState && (!isBFT || currentProof != null || appStateOnly)) {
+							logger.debug("---- RECEIVED VALID STATE ----");
+	
+							tomLayer.getSynchronizer().getLCManager().setLastReg(currentRegency);
+							tomLayer.getSynchronizer().getLCManager().setNextReg(currentRegency);
+							tomLayer.getSynchronizer().getLCManager().setNewLeader(currentLeader);
+	
+							tomLayer.execManager.setNewLeader(currentLeader);
+	
+							if (currentProof != null && !appStateOnly) {
+								logger.debug("Trying to install proof for consensus " + waitingCID);
+	
+								Consensus cons = execManager.getConsensus(waitingCID);
+								Epoch e = null;
+	
+								for (ConsensusMessage cm : currentProof.getConsMessages()) {
+									e = cons.getEpoch(cm.getEpoch(), true, SVController);
+									if (e.getTimestamp() != cm.getEpoch()) {
+										logger.debug("Strange... proof contains messages from more than just one epoch");
+										e = cons.getEpoch(cm.getEpoch(), true, SVController);
 									}
-								};
-
-								stateTimer = new Timer("state timer");
-								timeout = timeout * 2;
-								if(timeout < 0)
-									timeout = INIT_TIMEOUT;
-								stateTimer.schedule(stateTask, timeout);
-
+									e.addToProof(cm);
+									if (cm.getType() == MessageFactory.ACCEPT) {
+										e.setAccept(cm.getSender(), cm.getValue());
+									}
+									else if (cm.getType() == MessageFactory.WRITE) {
+										e.setWrite(cm.getSender(), cm.getValue());
+									}
+								}
+	
+								if (e != null) {
+									byte[] hash = tomLayer.computeHash(currentProof.getDecision());
+									e.propValueHash = hash;
+									e.propValue = currentProof.getDecision();
+									e.deserializedPropValue = tomLayer.checkProposedValue(currentProof.getDecision(), false);
+									cons.decided(e, false);
+									logger.info("Successfully installed proof for consensus " + waitingCID);
+								} else {
+									//NOTE [JSoares]: if this happens shouldn't the transfer process stop????
+									logger.debug("Failed to install proof for consensus " + waitingCID);
+								}
+							}
+	
+							// I might have timed out before invoking the state transfer, so
+							// stop my re-transmission of STOP messages for all regencies up to the current one
+							if (currentRegency > 0) {
+								tomLayer.getSynchronizer().removeSTOPretransmissions(currentRegency - 1);
+							}
+	
+							logger.debug("Trying to acquire deliverlock");
+							dt.deliverLock();
+							logger.debug("Successfuly acquired deliverlock");
+	
+							// this makes the isRetrievingState() evaluates to false
+							waitingCID = -1;
+							
+							// JSoares Modified, since the state sent by the UpperLog replica contains checkpoint data 
+							// and the original transfer process is not expecting it
+							stateUpper.get().setSerializedState(null);
+							
+							logger.debug("Updating state with Upper Log operations");
+							dt.update(stateUpper.get());
+	
+							// Deal with stopped messages that may come from
+							// synchronization phase
+							if (!appStateOnly && execManager.stopped()) {
+								Queue<ConsensusMessage> stoppedMsgs = execManager.getStoppedMsgs();
+								for (ConsensusMessage stopped : stoppedMsgs) {
+									if (stopped.getNumber() > chkpntState.getLastCID()) {
+										execManager.addOutOfContextMessage(stopped);
+									}
+								}
+								execManager.clearStopped();
+								execManager.restart();
+							}
+	
+							logger.debug("Processing out of context messages");
+							tomLayer.processOutOfContext();
+	
+							if (SVController.getCurrentViewId() != currentView.getId()) {
+								logger.info("Installing current view!");
+								SVController.reconfigureTo(currentView);
+							}
+	
+							isInitializing = false;
+	
+							dt.canDeliver();
+							dt.deliverUnlock();
+	
+							logger.info("State Transfer process completed successfuly!");
+							
+							reset(true);
+							
+							tomLayer.requestsTimer.Enabled(true);
+							tomLayer.requestsTimer.startTimer();
+	
+							if (stateTimer != null) {
+								stateTimer.cancel();
+							}
+	
+							if (appStateOnly) {
+								appStateOnly = false;
+								tomLayer.getSynchronizer().resumeLC();
+							}
+							CST_end_time = System.currentTimeMillis();
+							
+							System.out.println("State Transfer process completed successfuly!");
+							System.out.println("State Transfer duration: " + (CST_end_time - CST_start_time));
+							
+						} else if (chkpntState == null
+								&& (SVController.getCurrentViewN() / 2) < getReplies()) {
+							logger.debug("---- DIDNT RECEIVE STATE ----");
+	
+							waitingCID = -1;
+							reset(false);
+							if (appStateOnly) {
+								requestState();
+							}
+							if (stateTimer != null) {
+								stateTimer.cancel();
+							}
+						} else if (!validState) {
+							logger.debug("---- RECEIVED INVALID STATE  ----");
+	
+							retries ++;
+							if(retries < 3) {							
+								Integer[] faultyShards = detectFaultyShards();
+								if(faultyShards.length == 0) { 
+									logger.debug("Cannot detect faulty shards. Will restart protocol");
+									reset(true);
+	//								firstReceivedStates.clear();
+	//								statePlusLower = null;
+									requestState();
+									if (stateTimer != null) {
+										stateTimer.cancel();
+									}
+								}
+								else {
+									logger.debug("Retrying State Transfer for the {} time", retries);
+									
+	                                reset(false);
+									if (stateTimer != null) {
+										stateTimer.cancel();
+									}
+									
+	                                this.shardedCSTConfig.reAssignShards(faultyShards);
+	                        		logger.debug("Requesting Faulty Shards: \n" + shardedCSTConfig);
+	
+	                                int me = SVController.getStaticConf().getProcessId();
+	                                
+									ShardedCSTSMMessage cstMsg = new ShardedCSTSMMessage(me, waitingCID,TOMUtil.SM_REQUEST, this.shardedCSTConfig, null, null, -1, -1);
+									tomLayer.getCommunication().send(SVController.getCurrentViewOtherAcceptors(), cstMsg);
+	
+									TimerTask stateTask = new TimerTask() {
+										public void run() {                
+											CSTSMMessage msg = new CSTSMMessage(-1, waitingCID,TOMUtil.TRIGGER_SM_LOCALLY, null, null, null, -1, -1);
+											triggerTimeout(msg);
+										}
+									};
+	
+									stateTimer = new Timer("state timer");
+									timeout = timeout * 2;
+									if(timeout < 0)
+										timeout = INIT_TIMEOUT;
+									stateTimer.schedule(stateTask, timeout);
+	
+								}
+							}
+							else {
+								logger.debug("---- exceeded number of retries  ----");
+								logger.debug("---- exceeded number of retries  ----");
+								// exceeded number of retries
+								// have to restart protocol
+								// or should wait until timeout???
 							}
 						}
 						else {
-							logger.debug("---- exceeded number of retries  ----");
-							logger.debug("---- exceeded number of retries  ----");
-							// exceeded number of retries
-							// have to restart protocol
-							// or should wait until timeout???
+							logger.debug("---- NAO BATE EM NADA  ----");
+							logger.debug("---- NAO BATE EM NADA  ----");
+							logger.debug("---- NAO BATE EM NADA  ----");
+							logger.debug("---- NAO BATE EM NADA  ----");
+							logger.debug("---- NAO BATE EM NADA  ----");
+							logger.debug("---- NAO BATE EM NADA  ----");
 						}
-					}
-					else {
-						logger.debug("---- NAO BATE EM NADA  ----");
-						logger.debug("---- NAO BATE EM NADA  ----");
-						logger.debug("---- NAO BATE EM NADA  ----");
-						logger.debug("---- NAO BATE EM NADA  ----");
-						logger.debug("---- NAO BATE EM NADA  ----");
-						logger.debug("---- NAO BATE EM NADA  ----");
+						lockTimer.unlock();
+						CSTfence.set(false);
 					}
 				}
 			}
@@ -862,6 +890,16 @@ public class ShardedStateManager extends DurableStateManager {
 				logger.info("Received unexpected state reply (discarding)");
 			}
 		}
-		lockTimer.unlock();
+	}
+	
+	public void reset(boolean full) {
+		super.reset();
+		if(full) {
+			firstReceivedStates.clear();
+			statePlusLower = null;
+			this.chkpntState = null;
+			stateLower.set(null);
+			stateUpper.set(null);
+		}
 	}
 }

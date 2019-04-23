@@ -3,15 +3,12 @@ package bftsmart.statemanagement.durability.shard;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import bftsmart.statemanagement.durability.CSTRequestF1;
-import ch.qos.logback.classic.Logger;
 import merkletree.MerkleTree;
 
 public class ShardedCSTRequest extends CSTRequestF1 {
@@ -108,7 +105,7 @@ public class ShardedCSTRequest extends CSTRequestF1 {
     }
 	
 	//defines the set of common shards between all replicas and defines which are assigned to each replica
-	public void assignShards(HashMap<Integer, ShardedCSTState> firstReceivedStates, byte[] localState) throws Exception {
+	public void assignShards(ConcurrentHashMap<Integer, ShardedCSTState> firstReceivedStates, byte[] localState) throws Exception {
 		
 		ShardedCSTState chkpntState = firstReceivedStates.get(checkpointReplica);
 		ShardedCSTState upperLogState = firstReceivedStates.get(logUpper);

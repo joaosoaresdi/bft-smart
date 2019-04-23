@@ -16,10 +16,15 @@
  */
 package bftsmart.statemanagement;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import bftsmart.consensus.messages.ConsensusMessage;
 import bftsmart.reconfiguration.ServerViewController;
@@ -28,15 +33,10 @@ import bftsmart.statemanagement.standard.StandardSMMessage;
 import bftsmart.tom.core.DeliveryThread;
 import bftsmart.tom.core.ExecutionManager;
 import bftsmart.tom.core.TOMLayer;
-import bftsmart.tom.leaderchange.LCManager;
 import bftsmart.tom.leaderchange.CertifiedDecision;
-import bftsmart.tom.util.TOMUtil;
-import bftsmart.tom.server.defaultservices.CommandsInfo;
+import bftsmart.tom.leaderchange.LCManager;
 import bftsmart.tom.server.defaultservices.DefaultApplicationState;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import bftsmart.tom.util.TOMUtil;
 
 /**
  *
@@ -52,7 +52,7 @@ public abstract class StateManager {
 	protected DeliveryThread dt;
 	protected ExecutionManager execManager;
 
-	protected HashMap<Integer, ApplicationState> receivedStates = null; //received application state
+	protected ConcurrentHashMap<Integer, ApplicationState> receivedStates = null; //received application state
 	protected HashMap<Integer, View> receivedViews = null;
 	protected HashMap<Integer, Integer> receivedRegencies = null;
 	protected HashMap<Integer, Integer> receivedLeaders = null;
@@ -65,10 +65,10 @@ public abstract class StateManager {
 	protected ApplicationState chkpntState;
 
 	protected boolean isInitializing = true;
-	protected Map<Integer, Map<Integer, Integer>> queries = new HashMap<>();
+	protected Map<Integer, Map<Integer, Integer>> queries = new ConcurrentHashMap<>();
 
 	public StateManager() {
-		receivedStates = new HashMap<>();
+		receivedStates = new ConcurrentHashMap<>();
 		receivedViews = new HashMap<>();
 		receivedRegencies = new HashMap<>();
 		receivedLeaders = new HashMap<>();
@@ -247,7 +247,8 @@ public abstract class StateManager {
 			logger.info("Sending ConsensusID query {}", currentCID);
 			tomLayer.getCommunication().send(target, currentCID);
 			try {
-				Thread.sleep(10000);
+				// TODO: this should be parameterised (value modified by JSoares)
+				Thread.sleep(30000);
 			} catch (InterruptedException e) {
 				logger.error("Interruption during sleep", e);
 			}

@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
@@ -51,11 +52,10 @@ public class DurableStateManager extends StateManager {
 	protected final static long INIT_TIMEOUT = 120000;
 	protected long timeout = INIT_TIMEOUT;
 
-	protected CSTRequestF1 cstRequest;
-
-	//protected CSTState stateCkp;
-	protected CSTState stateLower;
-	protected CSTState stateUpper;
+	private CSTRequestF1 cstConfig;
+	
+	static final protected AtomicReference<CSTState> stateLower = new AtomicReference<>(null);	
+	static final protected AtomicReference<CSTState> stateUpper = new AtomicReference<>(null);
 
 	protected StateSenderServer stateServer= null;
 
@@ -83,7 +83,7 @@ public class DurableStateManager extends StateManager {
 
 		CSTRequestF1 cst = new CSTRequestF1(waitingCID);
 		cst.defineReplicas(otherProcesses, globalCkpPeriod, me);
-		this.cstRequest = cst;
+		this.cstConfig = cst;
 		
 		CSTSMMessage cstMsg = new CSTSMMessage(me, waitingCID,
 				TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
@@ -232,31 +232,31 @@ public class DurableStateManager extends StateManager {
 				if (stateReceived instanceof CSTState) {
 
 					receivedStates.put(reply.getSender(), stateReceived);
-					if (reply.getSender() == cstRequest.getCheckpointReplica()) {
+					if (reply.getSender() == cstConfig.getCheckpointReplica()) {
 						logger.info("Received CHECKPOINT");
 						this.chkpntState = (CSTState) stateReceived;
 					}
-					if (reply.getSender() == cstRequest.getLogLower()) {
+					if (reply.getSender() == cstConfig.getLogLower()) {
 						logger.info("Received Lower Log");
-						this.stateLower = (CSTState) stateReceived;
+						stateLower.set((CSTState) stateReceived);
 					}
-					if (reply.getSender() == cstRequest.getLogUpper()) {
+					if (reply.getSender() == cstConfig.getLogUpper()) {
 						logger.info("Received Upper Log");
-						this.stateUpper = (CSTState) stateReceived;
+						stateUpper.set((CSTState) stateReceived);
 					}
 				}
 
 				if (receivedStates.size() == 3) {
 					boolean validState = false;
-					CommandsInfo[] upperLog = stateUpper.getLogUpper();
+					CommandsInfo[] upperLog = stateUpper.get().getLogUpper();
 					byte[] upperLogHash = CommandsInfo.computeHash(upperLog);
 
 					if (reply.getCID() < SVController.getStaticConf().getGlobalCheckpointPeriod()) {
 						validState = validatePreCSTState(upperLog, upperLogHash);
 					}
 					else {
-
-						CommandsInfo[] lowerLog = stateLower.getLogLower();
+						
+						CommandsInfo[] lowerLog = stateLower.get().getLogLower();
 
 						byte[] lowerLogHash = CommandsInfo.computeHash(lowerLog);
 						System.out.println("###############################################################");
@@ -291,22 +291,22 @@ public class DurableStateManager extends StateManager {
 
 						CSTState statePlusLower = new CSTState(((CSTState)chkpntState).getSerializedState(),
 								TOMUtil.getBytes(((CSTState)chkpntState).getSerializedState()),
-								stateLower.getLogLower(), ((CSTState)chkpntState).getLogLowerHash(), null, null,
-								((CSTState)chkpntState).getCheckpointCID(), stateUpper.getCheckpointCID(), SVController.getStaticConf().getProcessId());
+								stateLower.get().getLogLower(), ((CSTState)chkpntState).getLogLowerHash(), null, null,
+								((CSTState)chkpntState).getCheckpointCID(), stateUpper.get().getCheckpointCID(), SVController.getStaticConf().getProcessId());
 
 						if (validState) { // validate checkpoint
 							logger.info("validating checkpoint!!!");
 							dt.getRecoverer().setState(statePlusLower);
 							byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
-							if (!Arrays.equals(currentStateHash, stateUpper.getCheckpointHash())) {
+							if (!Arrays.equals(currentStateHash, stateUpper.get().getCheckpointHash())) {
 								logger.warn("checkpoint hash don't match");
 								validState = false;
 							}
 						}
 					}
 
-					logger.debug("get certifiedDecision for index " + this.stateUpper.getLastCID() + ". log upper size(): " + this.stateUpper.getLogUpper().length);
-					currentProof = this.stateUpper.getCertifiedDecision(SVController);
+					logger.debug("get certifiedDecision for index " + stateUpper.get().getLastCID() + ". log upper size(): " + stateUpper.get().getLogUpper().length);
+					currentProof = stateUpper.get().getCertifiedDecision(SVController);
 
 					logger.debug("-- current regency: " + currentRegency);
 					logger.debug("-- current leader: " + currentLeader);
@@ -321,7 +321,7 @@ public class DurableStateManager extends StateManager {
 
 						logger.debug("The state of those replies is good!");
 						logger.debug("CID State requested: " + reply.getCID());
-						logger.debug("CID State received: " + stateUpper.getLastCID());
+						logger.debug("CID State received: " + stateUpper.get().getLastCID());
 
 						tomLayer.getSynchronizer().getLCManager().setLastReg(currentRegency);
 						tomLayer.getSynchronizer().getLCManager().setNextReg(currentRegency);
@@ -382,7 +382,7 @@ public class DurableStateManager extends StateManager {
 
 						// this makes the isRetrievingState() evaluates to false
 						waitingCID = -1;
-						dt.update(stateUpper);
+						dt.update(stateUpper.get());
 
 						// Deal with stopped messages that may come from
 						// synchronization phase
@@ -469,7 +469,7 @@ public class DurableStateManager extends StateManager {
 
 	private boolean validatePreCSTState(CommandsInfo[] upperLog, byte[] upperLogHash) {
 		byte[] logHashFromCkpSender = ((CSTState)chkpntState).getLogUpperHash();
-		byte[] logHashFromLowerSender = stateLower.getLogUpperHash();
+		byte[] logHashFromLowerSender = stateLower.get().getLogUpperHash();
 
 		boolean haveState = false;
 		haveState = Arrays.equals(upperLogHash, logHashFromCkpSender);
