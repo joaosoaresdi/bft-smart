@@ -7,6 +7,8 @@ import java.io.ObjectOutput;
 import java.util.Set;
 import java.util.TreeMap;
 
+import bftsmart.reconfiguration.util.TOMConfiguration;
+
 public class YCSBNamespace extends TreeMap<String, YCSBTable> implements Externalizable {
 
 	private static final long serialVersionUID = -180120948539141818L;
@@ -19,8 +21,8 @@ public class YCSBNamespace extends TreeMap<String, YCSBTable> implements Externa
     	
     	out.writeInt(keys.size());
     	written += 4;
-    	fillTo1k(written, out);
-    	
+    	fillToShardSize(written, out);
+    	written = 0;
     	for(String key : keys) {
 	    		out.writeUTF(key);
 	    		YCSBTable crt = get(key);
@@ -32,13 +34,15 @@ public class YCSBNamespace extends TreeMap<String, YCSBTable> implements Externa
 		}
 	}
 
-	private void fillTo1k(int c, ObjectOutput out) throws IOException {
-		for(int i = c; i < 1024; i++)
+	private int shardSize = TOMConfiguration.staticLoad().getShardSize();
+	
+	private void fillToShardSize(int c, ObjectOutput out) throws IOException {
+		for(int i = c; i < shardSize; i++)
 			out.write('\0');
 	}
 
-	private void readTo1k(int c, ObjectInput in) throws IOException {
-		for(int i = c; i < 1024; i++)
+	private void readToShardSize(int c, ObjectInput in) throws IOException {
+		for(int i = c; i < shardSize; i++)
 			in.read();
 	}
 
@@ -48,12 +52,12 @@ public class YCSBNamespace extends TreeMap<String, YCSBTable> implements Externa
     	int read = this.getClass().getName().length();
     	int keys = in.readInt();
     	read += 4;
-    	readTo1k(read, in);
-    	
+    	readToShardSize(read, in);
+    	read = 0;
 		while(keys > 0) {
-    			String key = in.readUTF();
-    			YCSBTable value = (YCSBTable) in.readObject();
-        		this.put(key, value);
+			String key = in.readUTF();
+			YCSBTable value = (YCSBTable) in.readObject();
+    		this.put(key, value);
 	    	keys --;
  		}
 		}catch (Exception e) {

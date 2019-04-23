@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
 
+import bftsmart.reconfiguration.util.TOMConfiguration;
+
 /**
  *
  * @author Marcel Santos
@@ -44,7 +46,7 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
     	out.writeInt(keys.size());
     	written += 4;
     	
-    	fillTo1k(written, out);
+    	fillToShardSize(written, out);
     	written = 0;
     	
     	for(String key : keys) {
@@ -74,7 +76,7 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
         		written += val.length;
         		
 	    	}
-	    	fillTo1k(written, out);
+	    	fillToShardSize(written, out);
 	    	written = 0;
     	}
 //    	out.flush();
@@ -84,17 +86,18 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
 			throw e;
 		}
 	}
+	int shardSize = TOMConfiguration.staticLoad().getShardSize();
 	
-	private void fillTo1k(int c, ObjectOutput out) throws IOException {
-		System.out.println("FILLING : " + (1024 - c));
+	private void fillToShardSize(int c, ObjectOutput out) throws IOException {
+		System.out.println("FILLING : " + (shardSize - c));
 		
-		for(int i = c; i < 1024; i++)
+		for(int i = c; i < shardSize; i++)
 			out.write('\0');
 	}
 
-	private void readTo1k(int c, ObjectInput in) throws IOException {
-		System.out.println("DISCARDING : " + (1024 - c));
-		for(int i = c; i < 1024; i++) {
+	private void readToShardSize(int c, ObjectInput in) throws IOException {
+		System.out.println("DISCARDING : " + (shardSize - c));
+		for(int i = c; i < shardSize; i++) {
 			int x = in.read();
 		}
 	}
@@ -106,7 +109,7 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
     	int keys = in.readInt();
     	read += 4;
     	
-    	readTo1k(read, in);
+    	readToShardSize(read, in);
     	read = 0;
     	
 		for(int i = 0; i < keys; i++) {
@@ -146,7 +149,7 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
 			}
     		this.put(key, value);
     		
-    		readTo1k(read, in);
+    		readToShardSize(read, in);
     		read = 0;
  		}
 		}catch(Exception e) {
