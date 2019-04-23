@@ -274,17 +274,17 @@ public class DurableStateManager extends StateManager {
 						System.out.println("###############################################################");
 						System.out.println("###############################################################");
 						System.out.println("########################### LOWER ##########################");
-						System.out.println(lowerLog);
-						System.out.println(lowerLogHash);
-						System.out.println(((CSTState)chkpntState).getLogLowerHash());
+						System.out.println(Arrays.toString(lowerLog));
+						System.out.println(Arrays.toString(lowerLogHash));
+						System.out.println(Arrays.toString(((CSTState)chkpntState).getLogLowerHash()));
 						
 						System.out.println("###############################################################");
 						System.out.println("###############################################################");
 						System.out.println("###############################################################");
 						System.out.println("############################# UPPER ##################################");
-						System.out.println(upperLog);
-						System.out.println(upperLogHash);
-						System.out.println(((CSTState)chkpntState).getLogUpperHash());
+						System.out.println(Arrays.toString(upperLog));
+						System.out.println(Arrays.toString(upperLogHash));
+						System.out.println(Arrays.toString(((CSTState)chkpntState).getLogUpperHash()));
 						
 						// validate lower log
 						if (Arrays.equals(((CSTState)chkpntState).getLogLowerHash(), lowerLogHash)) {
