@@ -276,7 +276,11 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 			if (state.getSerializedState() != null) {
 				logger.info("Installing checkpoint!");
 				log.update(state);
-				installSnapshot(state.getSerializedState());
+				try {
+					installSnapshot(state.getSerializedState());
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 
 			logger.info("Installing log from " + (lastCheckpointCID + 1) + " to " + lastCID);
@@ -456,8 +460,20 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 	@Override
 	public StateManager getStateManager() {
 		if (stateManager == null) {
-//				stateManager = new DurableStateManager();
-			stateManager = new ShardedStateManager();
+			if(TOMConfiguration.staticLoad().useOrigCST()) {
+//				System.out.println("#####################################");
+//				System.out.println("#####################################");
+//				System.out.println("#####################################");
+//				System.out.println("#### USING ORIGINAL CST PROTOCOL ####");
+				stateManager = new DurableStateManager();
+			}
+			else {
+//				System.out.println("#####################################");
+//				System.out.println("#####################################");
+//				System.out.println("#####################################");
+//				System.out.println("#### USING SHARDED CST PROTOCOL #####");
+				stateManager = new ShardedStateManager();
+			}
 		}
 		return stateManager;
 	}

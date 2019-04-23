@@ -233,11 +233,10 @@ public class ShardedStateManager extends DurableStateManager {
 	}
 
 	private Integer[] detectFaultyShards() {
-		System.exit(-1);
-		
 		logger.info("detecting faulty shards");
 		List<Integer> faultyPages = new LinkedList<Integer>();
 		int shardSize = this.shardedCSTConfig.getShardSize();
+		
 		MessageDigest md = null;
 		try {
 			md = MessageDigest.getInstance(this.shardedCSTConfig.hashAlgo);
@@ -245,60 +244,156 @@ public class ShardedStateManager extends DurableStateManager {
 			e.printStackTrace();
 		}
 
-		ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)chkpntState).getReplicaID());
-		MerkleTree mt = state.getMerkleTree();
-		List<TreeNode> nodes = mt.getLeafs();
-		byte[] data = ((ShardedCSTState)chkpntState).getSerializedState();
-		Integer[] shards = this.shardedCSTConfig.getNonCommonShards();
-		for(int i = 0; i < shards.length; i++) {
-			byte[] shard = new byte[shardSize];
-			System.arraycopy(data, i * shardSize, shard, 0, shardSize);
-			if(!Arrays.equals(md.digest(shard), nodes.get(shards[i]).digest())) {
-				logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
-				faultyPages.add(shards[i]);
-			}
-		}
+		Integer[] noncommonShards = shardedCSTConfig.getNonCommonShards();
+		Integer[] commonShards = shardedCSTConfig.getCommonShards();
+		
+        int nonCommon_size = noncommonShards.length;
+        int common_size = commonShards.length;
+        
+        int third = (nonCommon_size+common_size)/3;
+        int half;
+		if(common_size%2 == 1)
+			half = ((common_size+1)/2);
+		else 
+			half = (common_size/2);
+        
+    	if(nonCommon_size < third) {
+			ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)chkpntState).getReplicaID());
+			MerkleTree mt = state.getMerkleTree();
+			List<TreeNode> nodes = mt.getLeafs();
+			byte[] data = ((ShardedCSTState)chkpntState).getSerializedState();
 
-		state = firstReceivedStates.get(((ShardedCSTState)stateLower).getReplicaID());
-		mt = state.getMerkleTree();
-		nodes = mt.getLeafs();
-		data = state.getSerializedState();
-		
-		shards = this.shardedCSTConfig.getCommonShards();
-		int half = (shards.length/2)+1;
-		
-		for(int i = 0; i < half; i++) {
-			try {
+			Integer[] shards = this.shardedCSTConfig.getCommonShards();
+    		int comm_count = third - nonCommon_size;
+    		for(int i = 0;i < comm_count; i++) {
+    			byte[] shard = new byte[shardSize];
+    			try {
+    				System.arraycopy(data, i * shardSize, shard, 0, shardSize);
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    			}
+				if(!Arrays.equals(md.digest(shard), nodes.get(shards[i]).digest())) {
+					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
+					faultyPages.add(shards[i]);
+				}
+    		}
+			shards = this.shardedCSTConfig.getNonCommonShards();
+    		for(int i = 0;i < noncommonShards.length; i++) {
+    			byte[] shard = new byte[shardSize];
+    			try { 
+    				System.arraycopy(data, (comm_count+i) * shardSize, shard, 0, shardSize);
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    			}
+				if(!Arrays.equals(md.digest(shard), nodes.get(shards[i]).digest())) {
+					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
+					faultyPages.add(shards[i]);
+				}
+    		}
+
+			shards = this.shardedCSTConfig.getCommonShards();
+    		//lowerLog
+
+			state = firstReceivedStates.get(((ShardedCSTState)stateLower).getReplicaID());
+			mt = state.getMerkleTree();
+			nodes = mt.getLeafs();
+			data = state.getSerializedState();
+
+			int count = 0;
+    		for(int i = comm_count; i< (comm_count+third) ; i++, count++) {
 				byte[] shard = new byte[shardSize];
-				System.arraycopy(data, i * shardSize, shard, 0, shardSize);
+				try {
+					System.arraycopy(data, count * shardSize, shard, 0, shardSize);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				if(!Arrays.equals(md.digest(shard), nodes.get(count).digest())) {
+					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
+					faultyPages.add(shards[i]);
+				}
+    		}
+
+    		//upperLog
+			state = firstReceivedStates.get(((ShardedCSTState)stateUpper).getReplicaID());
+			mt = state.getMerkleTree();
+			nodes = mt.getLeafs();
+			data = state.getSerializedState();
+
+			int size = (common_size) - (comm_count+third);
+    		count = 0;
+    		for(int i = (comm_count+third) ; i < (comm_count+third+size) ; i++, count++) {
+				byte[] shard = new byte[shardSize];
+				try {
+					System.arraycopy(data, count * shardSize, shard, 0, shardSize);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				if(!Arrays.equals(md.digest(shard), nodes.get(count).digest())) {
+					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
+					faultyPages.add(shards[i]);
+				}
+    		}
+			
+    	}
+    	else {
+			ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)chkpntState).getReplicaID());
+			MerkleTree mt = state.getMerkleTree();
+			List<TreeNode> nodes = mt.getLeafs();
+			byte[] data = ((ShardedCSTState)chkpntState).getSerializedState();
+			Integer[] shards = this.shardedCSTConfig.getNonCommonShards();
+			for(int i = 0; i < shards.length; i++) {
+				byte[] shard = new byte[shardSize];
+				try {
+					System.arraycopy(data, i * shardSize, shard, 0, shardSize);
+				} catch (Exception e) {
+//					e.printStackTrace();
+				}
+				if(!Arrays.equals(md.digest(shard), nodes.get(shards[i]).digest())) {
+					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
+					faultyPages.add(shards[i]);
+				}
+			}
+	
+			shards = this.shardedCSTConfig.getCommonShards();
+
+			state = firstReceivedStates.get(((ShardedCSTState)stateLower).getReplicaID());
+			mt = state.getMerkleTree();
+			nodes = mt.getLeafs();
+			data = state.getSerializedState();
+			
+			for(int i = 0; i < half; i++) {
+				byte[] shard = new byte[shardSize];
+				try {
+					System.arraycopy(data, i * shardSize, shard, 0, shardSize);
+				} catch (Exception e) {
+//					e.printStackTrace();
+				}
 				if(!Arrays.equals(md.digest(shard), nodes.get(i).digest())) {
 					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
 					faultyPages.add(shards[i]);
 				}
-			} catch (Exception e) {
-				e.printStackTrace();
 			}
-		}
-
-		
-		state = firstReceivedStates.get(((ShardedCSTState)stateUpper).getReplicaID());
-		mt = state.getMerkleTree();
-		nodes = mt.getLeafs();
-		data = state.getSerializedState();
-
-		for(int i = 0; i < half; i++) {
-			try {
+	
+			
+			state = firstReceivedStates.get(((ShardedCSTState)stateUpper).getReplicaID());
+			mt = state.getMerkleTree();
+			nodes = mt.getLeafs();
+			data = state.getSerializedState();
+	
+			for(int i = 0; i < half; i++) {
 				byte[] shard = new byte[shardSize];
-				System.arraycopy(data, i * shardSize, shard, 0, shardSize);
+				try {
+					System.arraycopy(data, i * shardSize, shard, 0, shardSize);
+				} catch (Exception e) {
+//					e.printStackTrace();
+				}
 				if(!Arrays.equals(md.digest(shard), nodes.get(half+i).digest())) {
 					logger.info("Faulty shard detected {} from Replica {}", shards[half+i], state.getReplicaID());
 					faultyPages.add(shards[half+i]);
 				}
-			} catch (Exception e) {
-				e.printStackTrace();
 			}
-		}
 
+    	}
 		return faultyPages.toArray(new Integer[0]);
 	}
 
@@ -339,61 +434,49 @@ public class ShardedStateManager extends DurableStateManager {
     		byte[] logLowerSer = logLowerState.getSerializedState();
     		byte[] logUpperSer = logUpperState.getSerializedState();
     		byte[] chkpntSer = chkPntState.getSerializedState();
-
-    		System.out.println("THIRD SIZE : " + third);
     		
     		int comm_count = third - nonCommon_size;
-    		System.out.println("CHKPNT Common: [0 .." + comm_count);
     		for(int i = 0;i < comm_count; i++) {
-//    			System.out.println("copying Common["+ i +"] : " + commonShards[i]);
     			try {
     				System.arraycopy(chkpntSer, i*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
     			} catch (Exception e) {
-    				e.printStackTrace();
+//    				e.printStackTrace();
     				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
     			}
     		}
-    		System.out.println("CHKPNT NonCommon: [0 .." + noncommonShards.length);    		
+
     		for(int i = 0;i < noncommonShards.length; i++) {
-//    			System.out.println("copying nonCommon["+ i +"] : " + noncommonShards[i]);
+
     			try {
     				System.arraycopy(chkpntSer, (comm_count+i)*shardSize, rebuiltData, noncommonShards[i]*shardSize, shardSize);
     			} catch (Exception e) {
-    				e.printStackTrace();
+//    				e.printStackTrace();
     				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
     			}
     		}
 
-
-    		System.out.println(comm_count);
     		//lowerLog
     		int count = 0;
-    		System.out.println("LOWERLOG Common: ["+comm_count +" .." + (comm_count+third));    		
     		for(int i = comm_count; i< (comm_count+third) ; i++, count++) {
-//    			System.out.println("copying Common["+ (start+i) +"] : " + commonShards[i+start]);
     			try {
     				System.arraycopy(logLowerSer, count*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
     			} catch (Exception e) {
-    				e.printStackTrace();
+//    				e.printStackTrace();
     				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
     			}
     		}
-    		System.out.println(count);
+
     		//upperLog
        		int size = (common_size) - (comm_count+third);
     		count = 0;
-    		System.out.println("LOWERLOG Common: ["+(comm_count+third) +" .." + (comm_count+third+size));    		
     		for(int i = (comm_count+third) ; i < (comm_count+third+size) ; i++, count++) {
-//    			System.out.println("copying Common["+ (start+i) +"] : " + commonShards[start+i]);
     			try {
     				System.arraycopy(logUpperSer, count*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
     			} catch (Exception e) {
-    				e.printStackTrace();
+//    				e.printStackTrace();
     				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
     			}
     		}
-    		System.out.println(count);
-
     	}
     	else {
     		byte[] logLowerSer = logLowerState.getSerializedState();
@@ -406,7 +489,7 @@ public class ShardedStateManager extends DurableStateManager {
     					System.arraycopy(logUpperSer, (i-half)*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
     				}
     			} catch (Exception e) {
-    				e.printStackTrace();
+//    				e.printStackTrace();
     				logger.error("Error copying shard during state rebuild. IGNORING IT FOR NOW");
     			}
     		}
@@ -415,7 +498,7 @@ public class ShardedStateManager extends DurableStateManager {
     			try {
     				System.arraycopy(chkpntSer, i*shardSize, rebuiltData, noncommonShards[i]*shardSize, shardSize);
     			} catch (Exception e) {
-    				e.printStackTrace();
+//    				e.printStackTrace();
     				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
     			}
     		}

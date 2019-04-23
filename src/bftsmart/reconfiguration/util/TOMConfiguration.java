@@ -576,4 +576,10 @@ public class TOMConfiguration extends Configuration {
 		}
 		return null;
 	}
+	
+    public static TOMConfiguration staticLoad() {
+    	return new TOMConfiguration(-1, null);
+    }
+    
+
 }
