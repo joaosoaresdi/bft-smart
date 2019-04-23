@@ -270,7 +270,22 @@ public class DurableStateManager extends StateManager {
 						CommandsInfo[] lowerLog = stateLower.getLogLower();
 
 						byte[] lowerLogHash = CommandsInfo.computeHash(lowerLog);
-
+						System.out.println("###############################################################");
+						System.out.println("###############################################################");
+						System.out.println("###############################################################");
+						System.out.println("########################### LOWER ##########################");
+						System.out.println(lowerLog);
+						System.out.println(lowerLogHash);
+						System.out.println(((CSTState)chkpntState).getLogLowerHash());
+						
+						System.out.println("###############################################################");
+						System.out.println("###############################################################");
+						System.out.println("###############################################################");
+						System.out.println("############################# UPPER ##################################");
+						System.out.println(upperLog);
+						System.out.println(upperLogHash);
+						System.out.println(((CSTState)chkpntState).getLogUpperHash());
+						
 						// validate lower log
 						if (Arrays.equals(((CSTState)chkpntState).getLogLowerHash(), lowerLogHash)) {
 							validState = true;
