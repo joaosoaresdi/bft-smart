@@ -16,4 +16,4 @@
 
 REPLICA_INDEX=$1
 
-java -Dlogback.configurationFile="./config/logback.xml" -Xms4g -Xmx8g -cp .:./bin:./lib/* bftsmart.demo.ycsb.YCSBServer $REPLICA_INDEX
+java -Dlogback.configurationFile="./config/logback.xml" -Xms8g -Xmx16g -cp .:./bin:./lib/* bftsmart.demo.ycsb.YCSBServer $REPLICA_INDEX
