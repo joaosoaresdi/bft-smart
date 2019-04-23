@@ -380,7 +380,11 @@ public class DurableStateLog extends StateLog {
                 checkpointLock.unlock();
 //                System.out.println("--- sending checkpoint: " + ckpState.length);
                 CommandsInfo[] logLower = fr.getLogState(requestF1.getLogLowerSize(), logPath);
-                CommandsInfo[] logUpper = fr.getLogState(logPointers.get(requestF1.getLogUpper()), 0, requestF1.getLogUpperSize(), logPath);
+//                CommandsInfo[] logUpper = fr.getLogState(logPointers.get(requestF1.getLogUpper()), 0, requestF1.getLogUpperSize(), logPath);
+                
+                //Modified by JSoares trying to elliminate bug 
+                CommandsInfo[] logUpper = fr.getLogState(requestF1.getLogUpperSize(), logPath);
+
 //                byte[] logLowerBytes = TOMUtil.getBytes(logLower);
 //                System.out.println(logLower.length + " Log lower bytes size: " + logLowerBytes.length);
                 byte[] logLowerHash = CommandsInfo.computeHash(logLower);

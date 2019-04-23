@@ -127,10 +127,6 @@ public class CommandsInfo implements Serializable {
 
     // Computes the hashcode for the array, ignoring the proof, which is non-deterministic
     public static byte[] computeHash(CommandsInfo[] commands) {
-    	//modified by JSoares trying to eliminate buggy behavior
-    	if(commands == null)
-    		return TOMUtil.computeHash(TOMUtil.getBytes(new CommandsInfo[0]));
-    	
     	CommandsInfo[] hashTmp = new CommandsInfo[commands.length];
     	for (int i = 0; i < commands.length; i++) {
     		byte[][] tmpCmds = commands[i].commands;
