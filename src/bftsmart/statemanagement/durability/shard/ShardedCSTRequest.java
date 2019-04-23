@@ -131,23 +131,22 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		MerkleTree upperLogMT = upperLogState.getMerkleTree();
 		MerkleTree lowerLogtMT = lowerLogState.getMerkleTree();
 
-		System.out.println("chkpntMT.getLeafCount() : " + chkpntMT.getLeafCount());
-		System.out.println("chkpntMT.getHeight() : " + chkpntMT.getHeight());
-
-		System.out.println("upperLogMT.getLeafCount() : " + upperLogMT.getLeafCount());
-		System.out.println("upperLogMT.getHeight() : " + upperLogMT.getHeight());
-
-		System.out.println("lowerLogtMT.getLeafCount() : " + lowerLogtMT.getLeafCount());
-		System.out.println("lowerLogtMT.getHeight() : " + lowerLogtMT.getHeight());
+//		System.out.println("chkpntMT.getLeafCount() : " + chkpntMT.getLeafCount());
+//		System.out.println("chkpntMT.getHeight() : " + chkpntMT.getHeight());
+//
+//		System.out.println("upperLogMT.getLeafCount() : " + upperLogMT.getLeafCount());
+//		System.out.println("upperLogMT.getHeight() : " + upperLogMT.getHeight());
+//
+//		System.out.println("lowerLogtMT.getLeafCount() : " + lowerLogtMT.getLeafCount());
+//		System.out.println("lowerLogtMT.getHeight() : " + lowerLogtMT.getHeight());
 
 		this.shardCount = chkpntMT.getLeafCount();		
 
 		//Common shards between other replicas
 		HashSet<Integer> commonShards = new HashSet<>();
 		commonShards.addAll(chkpntMT.getEqualPageIndexs(upperLogMT));
-		System.out.println("COMMON SHARDS : " + Arrays.toString(commonShards.toArray()));
 		commonShards.retainAll(chkpntMT.getEqualPageIndexs(lowerLogtMT));
-		System.out.println("COMMON SHARDS : " + Arrays.toString(commonShards.toArray()));
+//		System.out.println("COMMON SHARDS : " + commonShards.size());
 		
 		// Set of all shards
 		Integer[] shards = new Integer[this.shardCount];
@@ -157,7 +156,6 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		HashSet<Integer> nonCommonShards = new HashSet<Integer>(Arrays.asList(shards));
 		nonCommonShards.removeAll(commonShards);
 		this.nonCommonShards = nonCommonShards.toArray(new Integer[0]);
-		System.out.println("NON COMMON SHARDS : " + Arrays.toString(this.nonCommonShards));
 		
 		MessageDigest md = null;
 		try {
@@ -167,14 +165,14 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		}
 		//remove currently available shards in common shards set 
 		MerkleTree localStateMT = MerkleTree.createTree(md, shardSize, localState);
-		System.out.println("localStateMT : " + localStateMT);
 		System.out.println("localStateMT.getLeafCount() : " + localStateMT.getLeafCount());
 		System.out.println("localStateMT.getHeight() : " + localStateMT.getHeight());
 		commonShards.removeAll(localStateMT.getEqualPageIndexs(upperLogMT));
 		commonShards.removeAll(localStateMT.getEqualPageIndexs(lowerLogtMT));
 		this.commonShards = commonShards.toArray(new Integer[0]);
-
-		System.out.println("COMMON SHARDS : " + Arrays.toString(this.commonShards));
+		
+		System.out.println("COMMON SHARDS : " + this.commonShards.length);
+		System.out.println("NONCOMMON SHARDS : " + this.nonCommonShards.length);
 	}
 
 	public void reAssignShards(Integer[] faultyShards) {
