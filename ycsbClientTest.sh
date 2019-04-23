@@ -18,7 +18,7 @@ if [ "$#" -lt 2 ]; then
     exit
 fi
 
-OP_COUNT=1033
+OP_COUNT=533
 if [ "$#" -eq 3 ]; then
 	OP_COUNT=$3
 fi
