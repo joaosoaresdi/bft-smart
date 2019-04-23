@@ -145,6 +145,7 @@ public class CSTState implements ApplicationState {
     	System.out.println("################### getMessageBatch ####################3");
     	System.out.println(cid);
     	System.out.println(checkpointCID);
+    	System.out.println(lastCID);
     	System.out.println(cid - checkpointCID - 1);
     	
         if (cid >= checkpointCID && cid <= lastCID) {
