@@ -274,7 +274,6 @@ public class DurableStateManager extends StateManager {
 						System.out.println("###############################################################");
 						System.out.println("###############################################################");
 						System.out.println("########################### LOWER ##########################");
-						System.out.println(Arrays.toString(lowerLog));
 						System.out.println(Arrays.toString(lowerLogHash));
 						System.out.println(Arrays.toString(((CSTState)chkpntState).getLogLowerHash()));
 						
@@ -282,7 +281,6 @@ public class DurableStateManager extends StateManager {
 						System.out.println("###############################################################");
 						System.out.println("###############################################################");
 						System.out.println("############################# UPPER ##################################");
-						System.out.println(Arrays.toString(upperLog));
 						System.out.println(Arrays.toString(upperLogHash));
 						System.out.println(Arrays.toString(((CSTState)chkpntState).getLogUpperHash()));
 						
