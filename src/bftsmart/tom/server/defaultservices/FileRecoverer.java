@@ -203,9 +203,9 @@ public class FileRecoverer {
             boolean mayRead = true;
             while (mayRead) {
                 try {
-                    logger.debug("Read chkPnt State from : {}", ckp.getFilePointer());
                     if (ckp.getFilePointer() < ckpLength) {
                         int size = ckp.readInt();
+                        logger.debug("Read chkPnt State : {} bytes", size);
                         if (size > 0) {
                             ckpState = new byte[size];// ckp state
                             int read = ckp.read(ckpState);
