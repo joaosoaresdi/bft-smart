@@ -448,16 +448,17 @@ public class FileRecoverer {
                                     return state.toArray(new CommandsInfo[state.size()]);
                                 }
                             } else {
-                                System.out
-                                        .println("recoverLogState (pointer,offset,number) STATE CLEAR");
+                                logger.debug("recoverLogState ({}, {} , {}) STATE CLEAR", pointer, startOffset, number);
                                 mayRead = false;
                                 state.clear();
                             }
                         } else {
+                            logger.debug("recoverLogState ({}, {} , {}) ELSE 1", pointer, startOffset, number);
                             System.out.println("recoverLogState (pointer,offset,number) ELSE 1");
                             mayRead = false;
                         }
                     } else {
+                        logger.debug("recoverLogState ({}, {} , {}) ELSE 2", pointer, startOffset, number);
                         System.out.println("recoverLogState (pointer,offset,number) ELSE 2 "
                                 + recoveredBatches);
                         mayRead = false;
