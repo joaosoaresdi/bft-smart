@@ -43,8 +43,10 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
     	Set<String> keys = this.keySet();
     	out.writeInt(keys.size());
     	written += 4;
+    	
     	fillTo1k(written, out);
-    	    	
+    	written = 0;
+    	
     	for(String key : keys) {
     		byte[] key_bytes = key.getBytes();
     		out.writeInt(key_bytes.length);
@@ -52,9 +54,6 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
     		out.write(key_bytes);
     		written +=key_bytes.length; 
     				
-//    		written = key.length();
-//    		out.writeUTF(key);
-
     		HashMap<String, byte[]> crt = get(key);
 	    	List<String> sorted_attrs = Arrays.asList(crt.keySet().toArray(new String[0]));
 	    	Collections.sort(sorted_attrs);
@@ -68,8 +67,6 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
 	    		written +=4;
 	    		out.write(attr_byte);
 	    		written += attr_byte.length;
-//        		written += attr.length();
-//	    		out.writeUTF(attr);
 	    		byte[] val = crt.get(attr);
 	    		out.writeInt(val.length);
 	    		written += 4;
@@ -78,6 +75,7 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
         		
 	    	}
 	    	fillTo1k(written, out);
+	    	written = 0;
     	}
 //    	out.flush();
 //    	out.close();
@@ -104,10 +102,11 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
     	int read = this.getClass().getName().length();
     	int keys = in.readInt();
     	read += 4;
+    	
     	readTo1k(read, in);
-//    	System.out.println("############################ --> " + keys);
+    	read = 0;
+    	
 		for(int i = 0; i < keys; i++) {
-//			System.out.println("\t########################### --> " + i);
 			int key_size = in.readInt();
 			read = 4;
 			byte[] key_byte = new byte[key_size];
@@ -117,8 +116,6 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
 			}
 			read += r;
 
-//    			String key = in.readUTF();
-//    			read += key.length();
 			String key = new String(key_byte);
     		HashMap<String, byte[]> value = new HashMap<>();
     		
@@ -133,9 +130,6 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
     			}
 				read += r;
     			
-//    				String attr = in.readUTF();
-//    				read += attr.length();
-    			
 				int size = in.readInt();
 				read += 4;
 				byte[] val = new byte[size];
@@ -148,7 +142,9 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
 				value.put(new String(attr_byte), val);
 			}
     		this.put(key, value);
+    		
     		readTo1k(read, in);
+    		read = 0;
  		}
 		}catch(Exception e) {
 			e.printStackTrace();
