@@ -128,22 +128,23 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		MerkleTree upperLogMT = upperLogState.getMerkleTree();
 		MerkleTree lowerLogtMT = lowerLogState.getMerkleTree();
 
-//		System.out.println("chkpntMT.getLeafCount() : " + chkpntMT.getLeafCount());
-//		System.out.println("chkpntMT.getHeight() : " + chkpntMT.getHeight());
+		System.out.println("chkpntMT.getLeafCount() : " + chkpntMT.getLeafCount());
+		System.out.println("chkpntMT.getHeight() : " + chkpntMT.getHeight());
 //
-//		System.out.println("upperLogMT.getLeafCount() : " + upperLogMT.getLeafCount());
-//		System.out.println("upperLogMT.getHeight() : " + upperLogMT.getHeight());
+		System.out.println("upperLogMT.getLeafCount() : " + upperLogMT.getLeafCount());
+		System.out.println("upperLogMT.getHeight() : " + upperLogMT.getHeight());
 //
-//		System.out.println("lowerLogtMT.getLeafCount() : " + lowerLogtMT.getLeafCount());
-//		System.out.println("lowerLogtMT.getHeight() : " + lowerLogtMT.getHeight());
+		System.out.println("lowerLogtMT.getLeafCount() : " + lowerLogtMT.getLeafCount());
+		System.out.println("lowerLogtMT.getHeight() : " + lowerLogtMT.getHeight());
 
 		this.shardCount = chkpntMT.getLeafCount();		
 
 		//Common shards between other replicas
 		HashSet<Integer> commonShards = new HashSet<>();
 		commonShards.addAll(chkpntMT.getEqualPageIndexs(upperLogMT));
+		System.out.println("COMMON SHARDS : " + commonShards.size());
 		commonShards.retainAll(chkpntMT.getEqualPageIndexs(lowerLogtMT));
-//		System.out.println("COMMON SHARDS : " + commonShards.size());
+		System.out.println("COMMON SHARDS : " + commonShards.size());
 		
 		// Set of all shards
 		Integer[] shards = new Integer[this.shardCount];

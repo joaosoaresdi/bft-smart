@@ -65,7 +65,7 @@ public class ShardedStateManager extends DurableStateManager {
 		state.setSerializedState(null);
 		
 		SMMessage currentCIDReply = new StandardSMMessage(me, id, TOMUtil.SM_REPLY_INITIAL, 0, state, null, 0, 0);
-		logger.info("Sending reply {}", currentCIDReply);
+		logger.debug("Sending reply {}", currentCIDReply);
 		tomLayer.getCommunication().send(new int[] { sender }, currentCIDReply);
 	}
 
@@ -78,7 +78,7 @@ public class ShardedStateManager extends DurableStateManager {
 			logger.debug("Ignoring ConsensusID request {} (expecting ID {})", smsg.toString(), queryID);
 			return;
 		}
-		logger.debug("Received ConsensusID request {} (expecting ID {})", smsg.toString(), queryID);
+		logger.debug("Received ConsensusID request {} (expecting queryID {})", smsg.toString(), queryID);
 
 		firstReceivedStates.put(smsg.getSender(), (ShardedCSTState)smsg.getState());
 		
@@ -107,7 +107,7 @@ public class ShardedStateManager extends DurableStateManager {
 			for (int cid : cids.keySet()) {
 				if (cids.get(cid) > SVController.getQuorum()) {
 					if(fence.compareAndSet(false, true)) { // only one can enter per queryID 
-						logger.info("There is a quorum for CID {}", cid);
+						logger.debug("There is a quorum for CID {}", cid);
 						queries.clear();
 	
 						if (cid == lastCID) {
