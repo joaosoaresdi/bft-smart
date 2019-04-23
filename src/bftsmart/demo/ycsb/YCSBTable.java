@@ -76,8 +76,10 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
         		written += val.length;
         		
 	    	}
-	    	fillToShardSize(written, out);
-	    	written = 0;
+    		if((written + written)>= shardSize) {
+    			fillToShardSize(written, out);
+    			written = 0;
+    		}
     	}
 //    	out.flush();
 //    	out.close();
@@ -150,8 +152,10 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
 			}
     		this.put(key, value);
     		
-    		readToShardSize(read, in);
-    		read = 0;
+    		if((read + read) >= shardSize) {
+    			readToShardSize(read, in);
+    			read = 0;
+    		}
  		}
 		}catch(Exception e) {
 			e.printStackTrace();
