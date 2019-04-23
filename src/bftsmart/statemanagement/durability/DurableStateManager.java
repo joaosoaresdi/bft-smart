@@ -76,15 +76,16 @@ public class DurableStateManager extends StateManager {
 			tomLayer.requestsTimer.clearAll();
 		}
 
-		int myProcessId = SVController.getStaticConf().getProcessId();
+		int me = SVController.getStaticConf().getProcessId();
 		int[] otherProcesses = SVController.getCurrentViewOtherAcceptors();
 		int globalCkpPeriod = SVController.getStaticConf()
 				.getGlobalCheckpointPeriod();
 
 		CSTRequestF1 cst = new CSTRequestF1(waitingCID);
-		cst.defineReplicas(otherProcesses, globalCkpPeriod, myProcessId);
+		cst.defineReplicas(otherProcesses, globalCkpPeriod, me);
 		this.cstRequest = cst;
-		CSTSMMessage cstMsg = new CSTSMMessage(myProcessId, waitingCID,
+		
+		CSTSMMessage cstMsg = new CSTSMMessage(me, waitingCID,
 				TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
 
 		logger.info("Sending state request to the other replicas {} ", cstMsg);
@@ -125,27 +126,15 @@ public class DurableStateManager extends StateManager {
 				&& dt.getRecoverer() != null) {
 			logger.info("The state transfer protocol is enabled");
 
-			logger.info("Received " + ((isBFT)? "BFT " : "") + "state request {}", msg.toString());
-			logger.info("Received a state request for CID "
-					+ msg.getCID() + " from replica " + msg.getSender());
-
-			CSTSMMessage cstMsg = (CSTSMMessage) msg;
-			CSTRequestF1 cstConfig = cstMsg.getCstConfig();
-			logger.info("CST config {}", cstConfig);
-			boolean sendState = cstConfig.getCheckpointReplica() == SVController
-					.getStaticConf().getProcessId();
-			if (sendState) {
-				logger.info("I should be the one sending the state");
-			}
-
-			InetSocketAddress address = SVController.getCurrentView().getAddress(
-					SVController.getStaticConf().getProcessId());
-			String myIp = address.getHostName();
 			int myId = SVController.getStaticConf().getProcessId();
+			InetSocketAddress address = SVController.getCurrentView().getAddress(myId);
 			int port = 4444 + myId;
-			address = new InetSocketAddress(myIp, port);
+			address = new InetSocketAddress(address.getHostName(), port);
+			
+			CSTRequestF1 cstConfig = ((CSTSMMessage) msg).getCstConfig();
 			cstConfig.setAddress(address);
 
+			//modified by JSoares
 			if (stateServer == null) {
 				stateServer = new StateSenderServer(port, dt.getRecoverer(), cstConfig);
 				new Thread(stateServer).start();

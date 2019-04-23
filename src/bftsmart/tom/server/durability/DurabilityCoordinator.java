@@ -393,11 +393,17 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 		if(cstRequest instanceof ShardedCSTRequest)
 			state = getShardedState((ShardedCSTRequest) cstRequest);
 		else {
-			if (cstRequest.getCID() < globalCheckpointPeriod) {
-				state = log.getStateBeforeGlobal((CSTRequestF1) cstRequest);
-			} else {
-				state = log.getState(cstRequest);
-			}
+			state = getOriginalState(cstRequest);
+		}
+		return state;
+	}
+	
+	private CSTState getOriginalState(CSTRequest cstRequest) {
+		CSTState state;
+		if (cstRequest.getCID() < globalCheckpointPeriod) {
+			state = log.getStateBeforeGlobal((CSTRequestF1) cstRequest);
+		} else {
+			state = log.getState(cstRequest);
 		}
 		return state;
 	}
