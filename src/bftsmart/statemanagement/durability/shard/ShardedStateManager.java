@@ -584,7 +584,7 @@ public class ShardedStateManager extends DurableStateManager {
 				Socket clientSocket;
 				ShardedCSTState stateReceived = null; //state transfer
 				try {
-					logger.info("Opening connection to peer {} for requesting its Replica State", address);
+					logger.debug("Opening connection to peer {} for requesting its Replica State", address);
 					clientSocket = new Socket(address.getHostName(), address.getPort());
 					ObjectInputStream in = new ObjectInputStream(clientSocket.getInputStream());
 					stateReceived = (ShardedCSTState) in.readObject();
@@ -612,7 +612,7 @@ public class ShardedStateManager extends DurableStateManager {
 				}
 
 				if (receivedStates.size() == 3) {
-					logger.info("Validating Received State\n");
+					logger.debug("Validating Received State\n");
 					CommandsInfo[] upperLog = stateUpper.getLogUpper();
 					byte[] upperLogHash = CommandsInfo.computeHash(upperLog);
 
@@ -627,35 +627,35 @@ public class ShardedStateManager extends DurableStateManager {
 						// validate lower log -> hash(lowerLog) == lowerLogHash
 						if (Arrays.equals(((CSTState)chkpntState).getLogLowerHash(), lowerLogHash)) {
 							validState = true;
-							logger.info("VALID Lower Log hash");
+							logger.debug("VALID Lower Log hash");
 						} else {
-							logger.info("INVALID Lower Log hash");
+							logger.debug("INVALID Lower Log hash");
 						}
 						// validate upper log -> hash(upperLog) == upperLogHash
 						if (!Arrays.equals(((CSTState)chkpntState).getLogUpperHash(), upperLogHash) ) {
 							validState = false;
-							logger.info("INVALID Upper Log hash");
+							logger.debug("INVALID Upper Log hash");
 						} else {
-							logger.info("VALID Upper Log hash");
+							logger.debug("VALID Upper Log hash");
 						}
 
 						if (validState) { // validate checkpoint
 							statePlusLower = rebuildCSTState();
-							logger.info("Intalling Checkpoint and replying Lower Log");
-							logger.info("Installing state plus lower \n" + statePlusLower);
+							logger.debug("Intalling Checkpoint and replying Lower Log");
+							logger.debug("Installing state plus lower \n" + statePlusLower);
 							dt.getRecoverer().setState(statePlusLower);
 							byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
 							System.out.println("CURR: " + Arrays.toString(currentStateHash));
 							System.out.println("UPPR: " + Arrays.toString(stateUpper.getCheckpointHash()));
 							if (!Arrays.equals(currentStateHash, stateUpper.getCheckpointHash())) {
-								logger.info("INVALID Checkpoint + Lower Log hash"); 
+								logger.debug("INVALID Checkpoint + Lower Log hash"); 
 								validState = false;
 							} else {
-								logger.info("VALID Checkpoint + Lower Log  hash");
+								logger.debug("VALID Checkpoint + Lower Log  hash");
 							}
 						}
 						else {
-							logger.info("Terminating transfer process due to faulty Lower and Upper Logs");
+							logger.debug("Terminating transfer process due to faulty Lower and Upper Logs");
 						}
 					}
 					
@@ -671,7 +671,7 @@ public class ShardedStateManager extends DurableStateManager {
 					
 					if (/*currentRegency > -1 &&*/ currentLeader > -1
 							&& currentView != null && validState && (!isBFT || currentProof != null || appStateOnly)) {
-						logger.info("---- RECEIVED VALID STATE ----");
+						logger.debug("---- RECEIVED VALID STATE ----");
 
 						tomLayer.getSynchronizer().getLCManager().setLastReg(currentRegency);
 						tomLayer.getSynchronizer().getLCManager().setNextReg(currentRegency);
@@ -680,7 +680,7 @@ public class ShardedStateManager extends DurableStateManager {
 						tomLayer.execManager.setNewLeader(currentLeader);
 
 						if (currentProof != null && !appStateOnly) {
-							logger.info("Trying to install proof for consensus " + waitingCID);
+							logger.debug("Trying to install proof for consensus " + waitingCID);
 
 							Consensus cons = execManager.getConsensus(waitingCID);
 							Epoch e = null;
@@ -709,7 +709,7 @@ public class ShardedStateManager extends DurableStateManager {
 								logger.info("Successfully installed proof for consensus " + waitingCID);
 							} else {
 								//NOTE [JSoares]: if this happens shouldn't the transfer process stop????
-								logger.info("Failed to install proof for consensus " + waitingCID);
+								logger.debug("Failed to install proof for consensus " + waitingCID);
 							}
 						}
 
@@ -719,9 +719,9 @@ public class ShardedStateManager extends DurableStateManager {
 							tomLayer.getSynchronizer().removeSTOPretransmissions(currentRegency - 1);
 						}
 
-						logger.info("Trying to acquire deliverlock");
+						logger.debug("Trying to acquire deliverlock");
 						dt.deliverLock();
-						logger.info("Successfuly acquired deliverlock");
+						logger.debug("Successfuly acquired deliverlock");
 
 						// this makes the isRetrievingState() evaluates to false
 						waitingCID = -1;
@@ -730,7 +730,7 @@ public class ShardedStateManager extends DurableStateManager {
 						// and the original transfer process is not expecting it
 						stateUpper.setSerializedState(null);
 						
-						logger.info("Updating state with Upper Log operations");
+						logger.debug("Updating state with Upper Log operations");
 						dt.update(stateUpper);
 
 						// Deal with stopped messages that may come from
@@ -746,7 +746,7 @@ public class ShardedStateManager extends DurableStateManager {
 							execManager.restart();
 						}
 
-						logger.info("Processing out of context messages");
+						logger.debug("Processing out of context messages");
 						tomLayer.processOutOfContext();
 
 						if (SVController.getCurrentViewId() != currentView.getId()) {
@@ -783,7 +783,7 @@ public class ShardedStateManager extends DurableStateManager {
 						
 					} else if (chkpntState == null
 							&& (SVController.getCurrentViewN() / 2) < getReplies()) {
-						logger.info("---- DIDNT RECEIVE STATE ----");
+						logger.debug("---- DIDNT RECEIVE STATE ----");
 
 						waitingCID = -1;
 						reset();
@@ -794,13 +794,13 @@ public class ShardedStateManager extends DurableStateManager {
 							stateTimer.cancel();
 						}
 					} else if (!validState) {
-						logger.warn("---- RECEIVED INVALID STATE  ----");
+						logger.debug("---- RECEIVED INVALID STATE  ----");
 
 						retries ++;
 						if(retries < 3) {							
 							Integer[] faultyShards = detectFaultyShards();
 							if(faultyShards.length == 0) { 
-								logger.info("Cannot detect faulty shards. Will restart protocol");
+								logger.debug("Cannot detect faulty shards. Will restart protocol");
 								reset();
 //								firstReceivedStates.clear();
 //								statePlusLower = null;
@@ -810,7 +810,7 @@ public class ShardedStateManager extends DurableStateManager {
 								}
 							}
 							else {
-								logger.info("Retrying State Transfer for the {} time", retries);
+								logger.debug("Retrying State Transfer for the {} time", retries);
 								
                                 reset();
 								if (stateTimer != null) {
