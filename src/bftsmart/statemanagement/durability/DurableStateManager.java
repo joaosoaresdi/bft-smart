@@ -65,8 +65,11 @@ public class DurableStateManager extends StateManager {
 		tomLayer.setLastExec(cid);
 	}
 
+	long stateTransferStartTime;
+	long stateTransferEndTime;
 	@Override
 	protected void requestState() {
+		stateTransferStartTime = System.currentTimeMillis();
 		logger.trace("");
 
 		if (tomLayer.requestsTimer != null) {
@@ -418,6 +421,11 @@ public class DurableStateManager extends StateManager {
 							appStateOnly = false;
 							tomLayer.getSynchronizer().resumeLC();
 						}
+						stateTransferEndTime = System.currentTimeMillis();
+						
+						System.out.println("State Transfer process completed successfuly!");
+						System.out.println("State Transfer duration: " + (stateTransferEndTime - stateTransferStartTime));
+
 					} else if (chkpntState == null && (SVController.getCurrentViewN() / 2) < getReplies()) {
 						logger.warn("---- DIDNT RECEIVE STATE ----");
 

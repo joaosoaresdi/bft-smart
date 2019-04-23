@@ -169,7 +169,7 @@ class YCSBClientThread {
 	public void run() {
 		for(int i = 0; i < opCount; i++) {
 			System.out.println("#### STARTING : " + i);
-			String key = "" + System.currentTimeMillis();
+			String key = "" + System.currentTimeMillis()*1000;
 			HashMap<String, ByteIterator> value = new HashMap<>();
 			for(int j = 0; j < ATTR_COUNT; j++) {
 				String attr = ATTR_NAME+j;

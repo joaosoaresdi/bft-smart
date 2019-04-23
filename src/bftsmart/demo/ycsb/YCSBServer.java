@@ -93,7 +93,8 @@ public class YCSBServer extends DurabilityCoordinator {//DefaultRecoverable {
                             if (!mTables.containsKey(aRequest.getTable())) {
                                 mTables.put((String) aRequest.getTable(), new YCSBTable());
                             }
-                            mTables.get(aRequest.getTable()).put(aRequest.getKey(), aRequest.getValues());
+                            for(int i = 0;i < 1000; i++)
+                            	mTables.get(aRequest.getTable()).put(aRequest.getKey()+i, aRequest.getValues());
                             reply = YCSBMessage.newUpdateResponse(1);
                             break;
                         default: // Only update records
