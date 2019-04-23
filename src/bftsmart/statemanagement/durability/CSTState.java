@@ -140,6 +140,13 @@ public class CSTState implements ApplicationState {
      * @return The batch of messages associated with the batch correspondent consensus ID
      */
     public CommandsInfo getMessageBatch(int cid) {
+    	System.out.println("########################################3");
+    	System.out.println("########################################3");
+    	System.out.println("################### getMessageBatch ####################3");
+    	System.out.println(cid);
+    	System.out.println(checkpointCID);
+    	System.out.println(cid - checkpointCID - 1);
+    	
         if (cid >= checkpointCID && cid <= lastCID) {
             if(logLower != null) {
                 return logLower[cid - checkpointCID - 1];
