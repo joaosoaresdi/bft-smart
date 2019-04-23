@@ -312,7 +312,7 @@ public class DurableStateManager extends StateManager {
 					logger.debug("-- currentProof: " + currentProof);
 					logger.debug("-- isBFT: " + isBFT);
 
-					if (currentRegency > -1 && currentLeader > -1
+					if ( /*currentRegency > -1 &&*/ currentLeader > -1
 							&& currentView != null && haveState && (!isBFT || currentProof != null || appStateOnly)) {
 						logger.debug("---- RECEIVED VALID STATE ----");
 
