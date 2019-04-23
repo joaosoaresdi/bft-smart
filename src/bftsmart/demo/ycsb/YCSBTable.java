@@ -129,6 +129,8 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
     		read += 4;
     		for(int j = 0;j < attr_len; j++) {
     			int attr_size = in.readInt();
+        		read += 4;
+        		
     			byte[] attr_byte = new byte[attr_size];
     			r = 0;
     			while (r < attr_size) {
