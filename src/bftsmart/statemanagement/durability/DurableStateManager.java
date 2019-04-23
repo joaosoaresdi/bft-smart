@@ -258,29 +258,29 @@ public class DurableStateManager extends StateManager {
 				}
 
 				if (receivedStates.size() == 3) {
-					boolean haveState = false;
+					boolean validState = false;
+					CommandsInfo[] upperLog = stateUpper.getLogUpper();
+					byte[] upperLogHash = CommandsInfo.computeHash(upperLog);
+
 					if (reply.getCID() < SVController.getStaticConf().getGlobalCheckpointPeriod()) {
-						haveState = validatePreCSTState();
+						validState = validatePreCSTState(upperLog, upperLogHash);
 					}
 					else {
 
 						CommandsInfo[] lowerLog = stateLower.getLogLower();
-						CommandsInfo[] upperLog = stateUpper.getLogUpper();
-						byte[] lowerbytes = TOMUtil.getBytes(lowerLog);
-						byte[] upperbytes = TOMUtil.getBytes(upperLog);
 
 						byte[] lowerLogHash = CommandsInfo.computeHash(lowerLog);
-						byte[] upperLogHash = CommandsInfo.computeHash(upperLog);
 
 						// validate lower log
 						if (Arrays.equals(((CSTState)chkpntState).getLogLowerHash(), lowerLogHash)) {
-							haveState = true;
+							validState = true;
 						} else {
 							logger.warn("Lower log does not match checkpoint");
 						}
 						// validate upper log
-						if (!haveState || !Arrays.equals(((CSTState)chkpntState).getLogUpperHash(), upperLogHash) ) {
-							haveState = false;
+
+						if (!Arrays.equals(((CSTState)chkpntState).getLogUpperHash(), upperLogHash) ) {
+							validState = false;
 							logger.error("Upper log does not match checkpoint");
 						} else {
 							logger.warn("Upper log does not match checkpoint");
@@ -291,13 +291,13 @@ public class DurableStateManager extends StateManager {
 								stateLower.getLogLower(), ((CSTState)chkpntState).getLogLowerHash(), null, null,
 								((CSTState)chkpntState).getCheckpointCID(), stateUpper.getCheckpointCID(), SVController.getStaticConf().getProcessId());
 
-						if (haveState) { // validate checkpoint
+						if (validState) { // validate checkpoint
 							logger.info("validating checkpoint!!!");
 							dt.getRecoverer().setState(statePlusLower);
 							byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
 							if (!Arrays.equals(currentStateHash, stateUpper.getCheckpointHash())) {
 								logger.warn("checkpoint hash don't match");
-								haveState = false;
+								validState = false;
 							}
 						}
 					}
@@ -308,12 +308,12 @@ public class DurableStateManager extends StateManager {
 					logger.debug("-- current regency: " + currentRegency);
 					logger.debug("-- current leader: " + currentLeader);
 					logger.debug("-- current view: " + currentView);
-					logger.debug("-- haveState: " + haveState);
+					logger.debug("-- haveState: " + validState);
 					logger.debug("-- currentProof: " + currentProof);
 					logger.debug("-- isBFT: " + isBFT);
 
 					if ( /*currentRegency > -1 &&*/ currentLeader > -1
-							&& currentView != null && haveState && (!isBFT || currentProof != null || appStateOnly)) {
+							&& currentView != null && validState && (!isBFT || currentProof != null || appStateOnly)) {
 						logger.debug("---- RECEIVED VALID STATE ----");
 
 						logger.debug("The state of those replies is good!");
@@ -443,7 +443,7 @@ public class DurableStateManager extends StateManager {
 						if (appStateOnly) {
 							requestState();
 						}
-					} else if (!haveState) {
+					} else if (!validState) {
 						logger.warn("---- RECEIVED INVALID STATE  ----");
 
 						logger.debug("The replica from which I expected the state, sent one which doesn't match the hash of the others, or it never sent it at all");
@@ -464,22 +464,14 @@ public class DurableStateManager extends StateManager {
 		lockTimer.unlock();
 	}
 
-	private boolean validatePreCSTState() {
-		CommandsInfo[] upperLog = stateUpper.getLogUpper();
+	private boolean validatePreCSTState(CommandsInfo[] upperLog, byte[] upperLogHash) {
 		byte[] logHashFromCkpSender = ((CSTState)chkpntState).getLogUpperHash();
 		byte[] logHashFromLowerSender = stateLower.getLogUpperHash();
 
-		byte[] upperbytes = TOMUtil.getBytes(upperLog);
-		System.out.println("Log upper array size: " + upperLog.length + ". Log upper bytes size: " + upperbytes.length);
-
-		byte[] upperLogHash = CommandsInfo.computeHash(upperLog);
-
 		boolean haveState = false;
 		haveState = Arrays.equals(upperLogHash, logHashFromCkpSender);
-		System.out.println("upper hash equals logHashFromCkpSender: " + haveState);
 		if (haveState) {
 			haveState = Arrays.equals(upperLogHash, logHashFromLowerSender);
-			System.out.println("upper hash equals logHashFromLowerSender: " + haveState);
 		}
 		return haveState;
 	}
