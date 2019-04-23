@@ -49,7 +49,7 @@ public class ShardedStateManager extends DurableStateManager {
 	@Override
 	public void currentConsensusIdAsked(int sender, int id) {
 		logger.trace("");
-		logger.info("Received ConsensusID query from {} with QueryID {}", sender, id);
+		logger.debug("Received ConsensusID query from {} with QueryID {}", sender, id);
 		int me = SVController.getStaticConf().getProcessId();
 		DurableStateLog log = ((DurableStateLog)dt.getRecoverer().getLog());
 
@@ -73,7 +73,7 @@ public class ShardedStateManager extends DurableStateManager {
 			logger.info("Ignoring ConsensusID request {} (expecting ID {})", smsg.toString(), queryID);
 			return;
 		}
-		logger.info("Received ConsensusID request {} (expecting ID {})", smsg.toString(), queryID);
+		logger.debug("Received ConsensusID request {} (expecting ID {})", smsg.toString(), queryID);
 
 		firstReceivedStates.put(smsg.getSender(), (ShardedCSTState)smsg.getState());
 
@@ -102,7 +102,7 @@ public class ShardedStateManager extends DurableStateManager {
 					queries.clear();
 
 					if (cid == lastCID) {
-						logger.info("Replica state is up to date");
+						logger.debug("Replica state is up to date");
 
 						firstReceivedStates.clear();
 
@@ -114,7 +114,7 @@ public class ShardedStateManager extends DurableStateManager {
 						break;
 					} else {
 						// ask for state
-						logger.info("Replica state is outdated...");
+						logger.debug("Replica state is outdated...");
 						System.out.println("Replica State is outdated...");
 						lastCID = cid + 1;
 						if (waitingCID == -1) {
@@ -398,7 +398,7 @@ public class ShardedStateManager extends DurableStateManager {
 	}
 
 	private ShardedCSTState rebuildCSTState() {
-		logger.info("rebuilding state");
+		logger.debug("rebuilding state");
 		ShardedCSTState chkPntState = (ShardedCSTState)chkpntState;
 		ShardedCSTState logUpperState = (ShardedCSTState)stateUpper;
 		ShardedCSTState logLowerState = (ShardedCSTState)stateLower;
