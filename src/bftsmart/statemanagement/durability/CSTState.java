@@ -149,10 +149,13 @@ public class CSTState implements ApplicationState {
     	System.out.println(cid - checkpointCID - 1);
     	
         if (cid >= checkpointCID && cid <= lastCID) {
+        	int index = (cid - checkpointCID - 1);
+        	if (index < 0)
+        		index = 0;
             if(logLower != null) {
-                return logLower[cid - checkpointCID - 1];
+                return logLower[index];
             } else if(logUpper != null) {
-                return logUpper[cid - checkpointCID - 1];
+                return logUpper[index];
             } else {
                 return null;
             }
