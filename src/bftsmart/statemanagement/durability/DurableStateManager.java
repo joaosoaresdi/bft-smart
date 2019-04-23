@@ -48,7 +48,7 @@ public class DurableStateManager extends StateManager {
 
 	protected ReentrantLock lockTimer = new ReentrantLock();
 	protected Timer stateTimer = null;
-	protected final static long INIT_TIMEOUT = 40000;
+	protected final static long INIT_TIMEOUT = 120000;
 	protected long timeout = INIT_TIMEOUT;
 
 	protected CSTRequestF1 cstRequest;
