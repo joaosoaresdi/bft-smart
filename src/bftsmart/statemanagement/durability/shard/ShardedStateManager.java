@@ -173,7 +173,6 @@ public class ShardedStateManager extends DurableStateManager {
 				cst.assignShards(firstReceivedStates, dt.getRecoverer().getState(this.lastCID, true).getSerializedState());
 				
 				logger.debug("\n\t Starting State Transfer: \n" + cst);
-				System.out.println("Starting State Transfer: \n" + cst);
 	
 				this.shardedCSTConfig = cst;
 				this.retries = 0;
@@ -232,9 +231,9 @@ public class ShardedStateManager extends DurableStateManager {
 		}
 	}
 
-	private boolean validatePreCSTState(CommandsInfo[] upperLog, byte[] upperLogHash) {
+	private boolean validatePreCSTState(CSTState lowerState, CommandsInfo[] upperLog, byte[] upperLogHash) {
 		byte[] logHashFromCkpSender = ((ShardedCSTState)chkpntState).getLogUpperHash();
-		byte[] logHashFromLowerSender = stateLower.get().getLogUpperHash();
+		byte[] logHashFromLowerSender = lowerState.getLogUpperHash();
 		boolean haveState = false;
 		haveState = Arrays.equals(upperLogHash, logHashFromCkpSender);
 		if (haveState) {
@@ -243,7 +242,7 @@ public class ShardedStateManager extends DurableStateManager {
 		return haveState;
 	}
 
-	private Integer[] detectFaultyShards() {
+	private Integer[] detectFaultyShards(CSTState lowerState, CSTState upperState, CSTState chkpntState) {
 		logger.info("detecting faulty shards");
 		List<Integer> faultyPages = new LinkedList<Integer>();
 		int shardSize = this.shardedCSTConfig.getShardSize();
@@ -305,7 +304,7 @@ public class ShardedStateManager extends DurableStateManager {
 			shards = this.shardedCSTConfig.getCommonShards();
     		//lowerLog
 
-			state = firstReceivedStates.get(((ShardedCSTState)stateLower.get()).getReplicaID());
+			state = firstReceivedStates.get(((ShardedCSTState)lowerState).getReplicaID());
 			mt = state.getMerkleTree();
 			nodes = mt.getLeafs();
 			data = state.getSerializedState();
@@ -325,7 +324,7 @@ public class ShardedStateManager extends DurableStateManager {
     		}
 
     		//upperLog
-			state = firstReceivedStates.get(((ShardedCSTState)stateUpper.get()).getReplicaID());
+			state = firstReceivedStates.get(((ShardedCSTState)upperState).getReplicaID());
 			mt = state.getMerkleTree();
 			nodes = mt.getLeafs();
 			data = state.getSerializedState();
@@ -367,7 +366,7 @@ public class ShardedStateManager extends DurableStateManager {
 	
 			shards = this.shardedCSTConfig.getCommonShards();
 
-			state = firstReceivedStates.get(((ShardedCSTState)stateLower.get()).getReplicaID());
+			state = firstReceivedStates.get(((ShardedCSTState)lowerState).getReplicaID());
 			mt = state.getMerkleTree();
 			nodes = mt.getLeafs();
 			data = state.getSerializedState();
@@ -386,7 +385,7 @@ public class ShardedStateManager extends DurableStateManager {
 			}
 	
 			
-			state = firstReceivedStates.get(((ShardedCSTState)stateUpper.get()).getReplicaID());
+			state = firstReceivedStates.get(((ShardedCSTState)upperState).getReplicaID());
 			mt = state.getMerkleTree();
 			nodes = mt.getLeafs();
 			data = state.getSerializedState();
@@ -408,11 +407,8 @@ public class ShardedStateManager extends DurableStateManager {
 		return faultyPages.toArray(new Integer[0]);
 	}
 
-	private ShardedCSTState rebuildCSTState() {
+	private ShardedCSTState rebuildCSTState(CSTState logLowerState, CSTState logUpperState, CSTState chkPntState) {
 		logger.debug("rebuilding state");
-		ShardedCSTState chkPntState = (ShardedCSTState)chkpntState;
-		ShardedCSTState logUpperState = (ShardedCSTState)stateUpper.get();
-		ShardedCSTState logLowerState = (ShardedCSTState)stateLower.get();
 
 		byte[] rebuiltData = new byte[shardedCSTConfig.getShardCount() * shardedCSTConfig.getShardSize()];
 		//TODO: current state should be copied directly into chkpntData
@@ -561,11 +557,10 @@ public class ShardedStateManager extends DurableStateManager {
 		ShardedCSTSMMessage reply = (ShardedCSTSMMessage)msg;
 		if (SVController.getStaticConf().isStateTransferEnabled()) {
 			logger.debug("The state transfer protocol is enabled");
-			logger.debug("Received a CSTMessage {} ", reply);
-
-			logger.debug("\n My current state is : \n \t waiting CID : " + waitingCID +
-					"\n \t last CID : " + lastCID + 
-					"\n \t query ID :  " + queryID);
+			logger.debug("Received a CSTMessage from {} ", reply.getSender());
+//			logger.debug("\n My current state is : \n \t waiting CID : " + waitingCID +
+//					"\n \t last CID : " + lastCID + 
+//					"\n \t query ID :  " + queryID);
 
 			if (waitingCID != -1 && reply.getCID() == waitingCID) {
 				int currentRegency = -1;
@@ -634,19 +629,24 @@ public class ShardedStateManager extends DurableStateManager {
 						lockTimer.lock();
 						// wait for every response of every replica						
 						// should use monitors
-						while(stateLower.get() == null);
-						while(stateUpper.get() == null);
 						
 						logger.debug("Validating Received State\n");
-						CommandsInfo[] upperLog = stateUpper.get().getLogUpper();
+						while(stateUpper.get() == null);
+						CSTState upperState = stateUpper.get();
+						
+						CommandsInfo[] upperLog = upperState.getLogUpper();
 						byte[] upperLogHash = CommandsInfo.computeHash(upperLog);
-	
+
+						while(stateLower.get() == null);
+						CSTState lowerState = stateLower.get();
+
 						boolean validState = false;
 						if (reply.getCID() < SVController.getStaticConf().getGlobalCheckpointPeriod()) {
-							validState = validatePreCSTState(upperLog, upperLogHash);
+							validState = validatePreCSTState(lowerState, upperLog, upperLogHash);
 						}
 						else {
-							CommandsInfo[] lowerLog = stateLower.get().getLogLower();
+
+							CommandsInfo[] lowerLog = lowerState.getLogLower();
 							byte[] lowerLogHash = CommandsInfo.computeHash(lowerLog);
 	
 							// validate lower log -> hash(lowerLog) == lowerLogHash
@@ -665,14 +665,12 @@ public class ShardedStateManager extends DurableStateManager {
 							}
 	
 							if (validState) { // validate checkpoint
-								statePlusLower = rebuildCSTState();
+								statePlusLower = rebuildCSTState(lowerState, upperState, (CSTState)chkpntState);
 								logger.debug("Intalling Checkpoint and replying Lower Log");
 								logger.debug("Installing state plus lower \n" + statePlusLower);
 								dt.getRecoverer().setState(statePlusLower);
 								byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
-								System.out.println("CURR: " + Arrays.toString(currentStateHash));
-								System.out.println("UPPR: " + Arrays.toString(stateUpper.get().getCheckpointHash()));
-								if (!Arrays.equals(currentStateHash, stateUpper.get().getCheckpointHash())) {
+								if (!Arrays.equals(currentStateHash, upperState.getCheckpointHash())) {
 									logger.debug("INVALID Checkpoint + Lower Log hash"); 
 									validState = false;
 								} else {
@@ -684,7 +682,7 @@ public class ShardedStateManager extends DurableStateManager {
 							}
 						}
 						
-						currentProof = stateUpper.get().getCertifiedDecision(SVController);
+						currentProof = upperState.getCertifiedDecision(SVController);
 						
 						logger.info("CURRENT Regency = " + currentRegency);
 						logger.info("CURRENT Leader = " + currentLeader);
@@ -753,10 +751,10 @@ public class ShardedStateManager extends DurableStateManager {
 							
 							// JSoares Modified, since the state sent by the UpperLog replica contains checkpoint data 
 							// and the original transfer process is not expecting it
-							stateUpper.get().setSerializedState(null);
+							upperState.setSerializedState(null);
 							
 							logger.debug("Updating state with Upper Log operations");
-							dt.update(stateUpper.get());
+							dt.update(upperState);
 	
 							// Deal with stopped messages that may come from
 							// synchronization phase
@@ -821,7 +819,7 @@ public class ShardedStateManager extends DurableStateManager {
 	
 							retries ++;
 							if(retries < 3) {							
-								Integer[] faultyShards = detectFaultyShards();
+								Integer[] faultyShards = detectFaultyShards(lowerState, upperState, (CSTState) chkpntState);
 								if(faultyShards.length == 0) { 
 									logger.debug("Cannot detect faulty shards. Will restart protocol");
 									reset(true);
