@@ -247,7 +247,7 @@ public abstract class StateManager {
 			logger.info("Sending ConsensusID query {}", currentCID);
 			tomLayer.getCommunication().send(target, currentCID);
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(10000);
 			} catch (InterruptedException e) {
 				logger.error("Interruption during sleep", e);
 			}
