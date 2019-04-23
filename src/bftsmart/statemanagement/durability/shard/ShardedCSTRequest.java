@@ -141,9 +141,15 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 
 		//Common shards between other replicas
 		HashSet<Integer> commonShards = new HashSet<>();
-		commonShards.addAll(chkpntMT.getEqualPageIndexs(upperLogMT));
-		System.out.println("COMMON SHARDS : " + commonShards.size());
-		commonShards.retainAll(chkpntMT.getEqualPageIndexs(lowerLogtMT));
+		if(chkpntMT.getHeight() == upperLogMT.getHeight()) {
+			commonShards.addAll(chkpntMT.getEqualPageIndexs(upperLogMT));
+			if(chkpntMT.getHeight() == lowerLogtMT.getHeight())
+				commonShards.retainAll(chkpntMT.getEqualPageIndexs(lowerLogtMT));
+		}
+		else {
+			if(chkpntMT.getHeight() == lowerLogtMT.getHeight())
+				commonShards.addAll(chkpntMT.getEqualPageIndexs(lowerLogtMT));
+		}
 		System.out.println("COMMON SHARDS : " + commonShards.size());
 		
 		// Set of all shards
@@ -162,11 +168,11 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 			e.printStackTrace();
 		}
 		//remove currently available shards in common shards set 
-		MerkleTree localStateMT = MerkleTree.createTree(md, shardSize, localState);
-		System.out.println("localStateMT.getLeafCount() : " + localStateMT.getLeafCount());
-		System.out.println("localStateMT.getHeight() : " + localStateMT.getHeight());
-		commonShards.removeAll(localStateMT.getEqualPageIndexs(upperLogMT));
-		commonShards.removeAll(localStateMT.getEqualPageIndexs(lowerLogtMT));
+//		MerkleTree localStateMT = MerkleTree.createTree(md, shardSize, localState);
+//		System.out.println("localStateMT.getLeafCount() : " + localStateMT.getLeafCount());
+//		System.out.println("localStateMT.getHeight() : " + localStateMT.getHeight());
+//		commonShards.removeAll(localStateMT.getEqualPageIndexs(upperLogMT));
+//		commonShards.removeAll(localStateMT.getEqualPageIndexs(lowerLogtMT));
 		this.commonShards = commonShards.toArray(new Integer[0]);
 		
 		System.out.println("COMMON SHARDS : " + this.commonShards.length);
