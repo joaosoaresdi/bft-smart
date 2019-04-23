@@ -86,11 +86,14 @@ public class YCSBTable extends TreeMap<String, HashMap<String, byte[]>> implemen
 	}
 	
 	private void fillTo1k(int c, ObjectOutput out) throws IOException {
+		System.out.println("FILLING : " + (1024 - c));
+		
 		for(int i = c; i < 1024; i++)
 			out.write('\0');
 	}
 
 	private void readTo1k(int c, ObjectInput in) throws IOException {
+		System.out.println("DISCARDING : " + (1024 - c));
 		for(int i = c; i < 1024; i++) {
 			int x = in.read();
 		}

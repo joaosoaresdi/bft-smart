@@ -279,7 +279,7 @@ public class DurableStateLog extends StateLog {
         	}
         	
         	System.out.println("Assigned Shards.length : " + assignedShards.length);
-        	System.out.println(Arrays.toString(assignedShards));
+//        	System.out.println(Arrays.toString(assignedShards));
             checkpointLock.lock();
             byte[] ckpState = fr.getCkpState(lastCkpPath, assignedShards, cstRequest.getShardSize());
             checkpointLock.unlock();
@@ -316,7 +316,7 @@ public class DurableStateLog extends StateLog {
 //        	}
 
         	System.out.println("Assigned Shards.length : " + assignedShards.length);
-        	System.out.println(Arrays.toString(assignedShards));
+//        	System.out.println(Arrays.toString(assignedShards));
         	checkpointLock.lock();
             byte[] ckpState = fr.getCkpState(lastCkpPath, assignedShards, cstRequest.getShardSize());
             checkpointLock.unlock(); 
@@ -344,7 +344,7 @@ public class DurableStateLog extends StateLog {
         	}
  	
         	System.out.println("Assigned Shards.length : " + assignedShards.length);
-        	System.out.println(Arrays.toString(assignedShards));
+//        	System.out.println(Arrays.toString(assignedShards));
 
         	checkpointLock.lock();
             fr.recoverCkpHash(lastCkpPath);
