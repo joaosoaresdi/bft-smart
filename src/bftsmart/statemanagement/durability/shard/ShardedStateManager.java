@@ -514,7 +514,7 @@ public class ShardedStateManager extends DurableStateManager {
 //    			}
 //    		}
 			System.out.println("COPYING 3 : " + size + " shards");
-			System.out.println("FROM : " + commonShards[comm_count+third] + " TO : " + commonShards[comm_count+third+size]);
+			System.out.println("FROM : " + commonShards[comm_count+third] + " TO : " + commonShards[comm_count+third+size-1]);
 			System.arraycopy(logUpperSer, 0, rebuiltData, commonShards[comm_count+third]*shardSize, logUpperSer.length);
     	}
     	else {
