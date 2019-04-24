@@ -467,6 +467,12 @@ public class ShardedStateManager extends DurableStateManager {
     				System.arraycopy(chkpntSer, start*shardSize, rebuiltData, commonShards[start]*shardSize, count*shardSize);
     				start = i;
     				count = 1;
+    				try {
+						Thread.sleep(500);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
     			}
     		}
 			System.out.println("COPYING 1 : " + count + " shards");
