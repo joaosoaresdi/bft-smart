@@ -462,14 +462,14 @@ public class ShardedStateManager extends DurableStateManager {
     				count ++;
     			}
     			else {
-    				System.out.println("COPYING : " + count + " shards");
+    				System.out.println("COPYING 0 : " + count + " shards");
     				System.out.println("FROM : " + commonShards[start] + " TO : " + commonShards[start+count]);
     				System.arraycopy(chkpntSer, start*shardSize, rebuiltData, commonShards[start]*shardSize, count*shardSize);
     				start = i;
     				count = 1;
     			}
     		}
-			System.out.println("COPYING : " + count + " shards");
+			System.out.println("COPYING 1 : " + count + " shards");
 			System.out.println("FROM : " + commonShards[start] + " TO : " + commonShards[start+count]);
 			System.arraycopy(chkpntSer, start*shardSize, rebuiltData, commonShards[start]*shardSize, count*shardSize);
 
@@ -492,7 +492,7 @@ public class ShardedStateManager extends DurableStateManager {
 //    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
 //    			}
 //    		}
-			System.out.println("COPYING : " + third + " shards");
+			System.out.println("COPYING 2 : " + third + " shards");
 			System.out.println("FROM : " + commonShards[comm_count] + " TO : " + commonShards[comm_count+third]);
 			System.arraycopy(logLowerSer, 0, rebuiltData, commonShards[comm_count]*shardSize, (third)*shardSize);
 			
@@ -507,7 +507,7 @@ public class ShardedStateManager extends DurableStateManager {
 //    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
 //    			}
 //    		}
-			System.out.println("COPYING : " + size + " shards");
+			System.out.println("COPYING 3 : " + size + " shards");
 			System.out.println("FROM : " + commonShards[comm_count+third] + " TO : " + commonShards[comm_count+third+size]);
 			System.arraycopy(logUpperSer, 0, rebuiltData, commonShards[comm_count+third]*shardSize, logUpperSer.length);
     	}
