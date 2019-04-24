@@ -248,7 +248,7 @@ public abstract class StateManager {
 			tomLayer.getCommunication().send(target, currentCID);
 			try {
 				// TODO: this should be parameterised (value modified by JSoares)
-				Thread.sleep(5000);
+				Thread.sleep(25000);
 			} catch (InterruptedException e) {
 				logger.error("Interruption during sleep", e);
 			}
