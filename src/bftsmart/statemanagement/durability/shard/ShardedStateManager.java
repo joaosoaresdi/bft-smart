@@ -503,7 +503,7 @@ public class ShardedStateManager extends DurableStateManager {
     		start = comm_count;
     		count = 1;
     		for(int i = 1; i < (third); i++) {
-    			if(commonShards[i+start] == (commonShards[start+i-1]+1)) {
+    			if(commonShards[i+comm_count] == (commonShards[comm_count+i-1]+1)) {
     				count ++;
     			}
     			else {
@@ -549,7 +549,7 @@ public class ShardedStateManager extends DurableStateManager {
     		System.out.println();
     		System.out.println();
     		for(int i = 1; i < (size); i++) {
-    			if(commonShards[i+start] == (commonShards[start+i-1]+1)) {
+    			if(commonShards[i+comm_count+third] == (commonShards[comm_count+third+i-1]+1)) {
     				count ++;
     			}
     			else {
