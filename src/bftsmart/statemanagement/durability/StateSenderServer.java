@@ -53,7 +53,7 @@ public class StateSenderServer implements Runnable {
 				ApplicationState state = coordinator.getState(request);
 				StateSender sender = new StateSender(socket, state);
 				new Thread(sender).start();
-			} catch (IOException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 				logger.error("Problem executing StateSenderServer thread", e);
 			}
