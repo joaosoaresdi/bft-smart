@@ -446,17 +446,18 @@ public class ShardedStateManager extends DurableStateManager {
     		byte[] chkpntSer = chkPntState.getSerializedState();
     		
     		int comm_count = third - nonCommon_size;
-    		for(int i = 0;i < comm_count; i++) {
-    			try {
-    				System.arraycopy(chkpntSer, i*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
-    			} catch (Exception e) {
-    				e.printStackTrace();
-    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
-    			}
-    		}
+//    		for(int i = 0;i < comm_count; i++) {
+//    			try {
+//    				System.arraycopy(chkpntSer, i*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
+//    			} catch (Exception e) {
+//    				e.printStackTrace();
+//    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+//    			}
+//    		}
+
+			System.arraycopy(chkpntSer, 0, rebuiltData, commonShards[0]*shardSize, comm_count*shardSize);
 
     		for(int i = 0;i < noncommonShards.length; i++) {
-
     			try {
     				System.arraycopy(chkpntSer, (comm_count+i)*shardSize, rebuiltData, noncommonShards[i]*shardSize, shardSize);
     			} catch (Exception e) {
@@ -467,26 +468,29 @@ public class ShardedStateManager extends DurableStateManager {
 
     		//lowerLog
     		int count = 0;
-    		for(int i = comm_count; i< (comm_count+third) ; i++, count++) {
-    			try {
-    				System.arraycopy(logLowerSer, count*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
-    			} catch (Exception e) {
-    				e.printStackTrace();
-    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
-    			}
-    		}
+//    		for(int i = comm_count; i< (comm_count+third) ; i++, count++) {
+//    			try {
+//    				System.arraycopy(logLowerSer, count*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
+//    			} catch (Exception e) {
+//    				e.printStackTrace();
+//    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+//    			}
+//    		}
+			System.arraycopy(logLowerSer, 0, rebuiltData, commonShards[comm_count]*shardSize, (comm_count+third)*shardSize);
 
     		//upperLog
        		int size = (common_size) - (comm_count+third);
-    		count = 0;
-    		for(int i = (comm_count+third) ; i < (comm_count+third+size) ; i++, count++) {
-    			try {
-    				System.arraycopy(logUpperSer, count*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
-    			} catch (Exception e) {
-    				e.printStackTrace();
-    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
-    			}
-    		}
+//    		count = 0;
+//    		for(int i = (comm_count+third) ; i < (comm_count+third+size) ; i++, count++) {
+//    			try {
+//    				System.arraycopy(logUpperSer, count*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
+//    			} catch (Exception e) {
+//    				e.printStackTrace();
+//    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+//    			}
+//    		}
+    		
+			System.arraycopy(logUpperSer, 0, rebuiltData, commonShards[comm_count+third]*shardSize, size);
     	}
     	else {
     		byte[] logLowerSer = logLowerState.getSerializedState();
