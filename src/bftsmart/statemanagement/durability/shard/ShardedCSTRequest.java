@@ -173,6 +173,7 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 //		commonShards.removeAll(localStateMT.getEqualPageIndexs(lowerLogtMT));
 		
 		this.commonShards = commonShards.toArray(new Integer[0]);
+		Arrays.sort(this.commonShards);
 		
 		System.out.println("COMMON SHARDS : " + this.commonShards.length);
 		System.out.println("NONCOMMON SHARDS : " + this.nonCommonShards.length);
