@@ -194,10 +194,13 @@ public class ServiceReplica {
     private void initReplica() {
     	int receiversCount = 1;
     	receivers = new Thread[receiversCount];
-    	for(int i =0 ;i < receiversCount; i++)
+    	
+    	for(int i =0 ;i < receivers.length; i++)
     		receivers[i] = new Thread(cs, "Server CS["+i+"]");
-    	for(int i =0 ;i < receiversCount; i++)
+    	
+    	for(int i =0 ;i < receivers.length; i++)
     		receivers[i].start();
+    	
 //        cs.start();
         repMan = new ReplyManager(SVController.getStaticConf().getNumRepliers(), cs);
     }
