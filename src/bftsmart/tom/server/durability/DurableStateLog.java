@@ -23,7 +23,6 @@ import java.io.ObjectOutputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
@@ -171,6 +170,7 @@ public class DurableStateLog extends StateLog {
         try {
             checkpointLock.lock();
             RandomAccessFile ckp = new RandomAccessFile(ckpPath, (syncCkp ? "rwd" : "rw"));
+             
             System.out.println("ALOCCATING " + (state.length + stateHash.length + 4 * INT_BYTE_SIZE) + " BYTES FOR CHKPNT BUFFER");
             System.out.println("STATE.length " + (state.length) + " BYTES");
             System.out.println("stateHash.length " + (stateHash.length) + " BYTES");

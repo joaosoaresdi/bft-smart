@@ -290,7 +290,7 @@ public class DurableStateManager extends StateManager {
 						}
 
 						CSTState statePlusLower = new CSTState(((CSTState)chkpntState).getSerializedState(),
-								TOMUtil.getBytes(((CSTState)chkpntState).getSerializedState()),
+								TOMUtil.computeHash(((CSTState)chkpntState).getSerializedState()),
 								stateLower.get().getLogLower(), ((CSTState)chkpntState).getLogLowerHash(), null, null,
 								((CSTState)chkpntState).getCheckpointCID(), stateUpper.get().getCheckpointCID(), SVController.getStaticConf().getProcessId());
 
