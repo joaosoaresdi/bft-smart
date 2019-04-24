@@ -192,7 +192,7 @@ public class ServiceReplica {
     //Modified by JSoares
     Thread[] receivers;
     private void initReplica() {
-    	int receiversCount = 3;
+    	int receiversCount = 1;
     	receivers = new Thread[receiversCount];
     	for(int i =0 ;i < receiversCount; i++)
     		receivers[i] = new Thread(cs, "Server CS["+i+"]");
