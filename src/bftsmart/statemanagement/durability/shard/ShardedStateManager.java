@@ -570,30 +570,9 @@ public class ShardedStateManager extends DurableStateManager {
 				View currentView = null;
 				CertifiedDecision currentProof = null;
 
-				if (!appStateOnly) {
-//					synchronized (receivedRegencies) {
-						receivedRegencies.put(reply.getSender(), reply.getRegency());
-						receivedLeaders.put(reply.getSender(), reply.getLeader());
-						receivedViews.put(reply.getSender(), reply.getView());
-		
-						if (enoughRegencies(reply.getRegency())) {
-							currentRegency = reply.getRegency();
-						}
-						if (enoughLeaders(reply.getLeader())) {
-							currentLeader = reply.getLeader();
-						}
-						if (enoughViews(reply.getView())) {
-							currentView = reply.getView();
-							if (!currentView.isMember(SVController.getStaticConf().getProcessId())) {
-								logger.warn("Not a member!");
-							}
-						}
-//					}
-				} else {
-					currentLeader = tomLayer.execManager.getCurrentLeader();
-					currentRegency = tomLayer.getSynchronizer().getLCManager().getLastReg();
-					currentView = SVController.getCurrentView();
-				}
+				receivedRegencies.put(reply.getSender(), reply.getRegency());
+				receivedLeaders.put(reply.getSender(), reply.getLeader());
+				receivedViews.put(reply.getSender(), reply.getView());
 
 				InetSocketAddress address = reply.getCstConfig().getAddress();
 				Socket clientSocket;
@@ -686,6 +665,25 @@ public class ShardedStateManager extends DurableStateManager {
 						
 						currentProof = upperState.getCertifiedDecision(SVController);
 						
+						if (!appStateOnly) {
+							if (enoughRegencies(reply.getRegency())) {
+								currentRegency = reply.getRegency();
+							}
+							if (enoughLeaders(reply.getLeader())) {
+								currentLeader = reply.getLeader();
+							}
+							if (enoughViews(reply.getView())) {
+								currentView = reply.getView();
+								if (!currentView.isMember(SVController.getStaticConf().getProcessId())) {
+								logger.warn("Not a member!");
+								}
+							}
+						} else {
+							currentLeader = tomLayer.execManager.getCurrentLeader();
+							currentRegency = tomLayer.getSynchronizer().getLCManager().getLastReg();
+							currentView = SVController.getCurrentView();
+						}
+								
 						logger.info("CURRENT Regency = " + currentRegency);
 						logger.info("CURRENT Leader = " + currentLeader);
 						logger.info("CURRENT View = " + currentView);
