@@ -258,21 +258,7 @@ public class DurableStateManager extends StateManager {
 						
 						CommandsInfo[] lowerLog = stateLower.get().getLogLower();
 
-						byte[] lowerLogHash = CommandsInfo.computeHash(lowerLog);
-						System.out.println("###############################################################");
-						System.out.println("###############################################################");
-						System.out.println("###############################################################");
-						System.out.println("########################### LOWER ##########################");
-						System.out.println(Arrays.toString(lowerLogHash));
-						System.out.println(Arrays.toString(((CSTState)chkpntState).getLogLowerHash()));
-						
-						System.out.println("###############################################################");
-						System.out.println("###############################################################");
-						System.out.println("###############################################################");
-						System.out.println("############################# UPPER ##################################");
-						System.out.println(Arrays.toString(upperLogHash));
-						System.out.println(Arrays.toString(((CSTState)chkpntState).getLogUpperHash()));
-						
+						byte[] lowerLogHash = CommandsInfo.computeHash(lowerLog);						
 						// validate lower log
 						if (Arrays.equals(((CSTState)chkpntState).getLogLowerHash(), lowerLogHash)) {
 							validState = true;
@@ -288,6 +274,9 @@ public class DurableStateManager extends StateManager {
 						} else {
 							logger.warn("Upper log matches checkpoint");
 						}
+						stateTransferEndTime = System.currentTimeMillis();
+						System.out.println("State Transfer process BEFORE statePlusLower!");
+						System.out.println("State Transfer duration: " + (stateTransferEndTime - stateTransferStartTime));
 
 						CSTState statePlusLower = new CSTState(((CSTState)chkpntState).getSerializedState(),
 								TOMUtil.computeHash(((CSTState)chkpntState).getSerializedState()),
@@ -295,8 +284,16 @@ public class DurableStateManager extends StateManager {
 								((CSTState)chkpntState).getCheckpointCID(), stateUpper.get().getCheckpointCID(), SVController.getStaticConf().getProcessId());
 
 						if (validState) { // validate checkpoint
-							logger.info("validating checkpoint!!!");
+							stateTransferEndTime = System.currentTimeMillis();
+							System.out.println("State Transfer process BEFORE setState!");
+							System.out.println("State Transfer duration: " + (stateTransferEndTime - stateTransferStartTime));
+
 							dt.getRecoverer().setState(statePlusLower);
+
+							stateTransferEndTime = System.currentTimeMillis();
+							System.out.println("State Transfer process BEFORE setState!");
+							System.out.println("State Transfer duration: " + (stateTransferEndTime - stateTransferStartTime));
+							
 							byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
 							if (!Arrays.equals(currentStateHash, stateUpper.get().getCheckpointHash())) {
 								logger.warn("checkpoint hash don't match");
@@ -425,7 +422,6 @@ public class DurableStateManager extends StateManager {
 							tomLayer.getSynchronizer().resumeLC();
 						}
 						stateTransferEndTime = System.currentTimeMillis();
-						
 						System.out.println("State Transfer process completed successfuly!");
 						System.out.println("State Transfer duration: " + (stateTransferEndTime - stateTransferStartTime));
 

@@ -652,7 +652,7 @@ public class ShardedStateManager extends DurableStateManager {
 
 								statePlusLower = rebuildCSTState(lowerState, upperState, (CSTState)chkpntState);
 								
-								CST_end_time = System.currentTimeMillis();								
+								CST_end_time = System.currentTimeMillis();
 								System.out.println("State Transfer process AFTER REBUILD!");
 								System.out.println("Time: " + (CST_end_time - CST_start_time));
 
