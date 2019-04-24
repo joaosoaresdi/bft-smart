@@ -463,7 +463,7 @@ public class ShardedStateManager extends DurableStateManager {
     			}
     			else {
     				System.out.println("COPYING 0 : " + count + " shards");
-    				System.out.println("FROM : " + commonShards[start] + " TO : " + commonShards[start+count]);
+    				System.out.println(i + " FROM : " + commonShards[start] + " TO : " + commonShards[start+count]);
     				System.arraycopy(chkpntSer, start*shardSize, rebuiltData, commonShards[start]*shardSize, count*shardSize);
     				start = i;
     				count = 1;
