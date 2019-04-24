@@ -173,7 +173,9 @@ public class DurableStateLog extends StateLog {
             RandomAccessFile ckp = new RandomAccessFile(ckpPath, (syncCkp ? "rwd" : "rw"));
             System.out.println("ALOCCATING " + (state.length + stateHash.length + 4 * INT_BYTE_SIZE) + " BYTES FOR CHKPNT BUFFER");
             System.out.println("STATE.length " + (state.length) + " BYTES");
+            System.out.println("stateHash.length" + (stateHash.length) + " BYTES");
             System.out.println("STATE.length +  stateHash.length" + (state.length + stateHash.length) + " BYTES");
+            System.out.println("STATE.length +  stateHash.length" + (long)(state.length + stateHash.length) + " BYTES");
             System.out.println("STATE.length +  stateHash.length + 4 * INT_BYTE_SIZE" + (state.length + stateHash.length + (4 * INT_BYTE_SIZE)) + " BYTES");
             ByteBuffer bf = ByteBuffer.allocate((state.length + stateHash.length + (4 * INT_BYTE_SIZE)));
             bf.putInt(state.length);
