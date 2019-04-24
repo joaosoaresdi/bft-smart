@@ -190,18 +190,18 @@ public class ServiceReplica {
     }
     
     //Modified by JSoares
-    Thread[] receivers;
+//    Thread[] receivers;
     private void initReplica() {
-    	int receiversCount = 1;
-    	receivers = new Thread[receiversCount];
+//    	int receiversCount = 1;
+//    	receivers = new Thread[receiversCount];
     	
-    	for(int i =0 ;i < receivers.length; i++)
-    		receivers[i] = new Thread(cs, "Server CS["+i+"]");
+//    	for(int i =0 ;i < receivers.length; i++)
+//    		receivers[i] = new Thread(cs, "Server CS["+i+"]");
     	
-    	for(int i =0 ;i < receivers.length; i++)
-    		receivers[i].start();
+//    	for(int i =0 ;i < receivers.length; i++)
+//    		receivers[i].start();
     	
-//        cs.start();
+        cs.start();
         repMan = new ReplyManager(SVController.getStaticConf().getNumRepliers(), cs);
     }
 
@@ -260,9 +260,9 @@ public class ServiceReplica {
                     tomLayer.shutdown();
 
                     try {
-                    	for(int i = 0;i < receivers.length; i++)
-                    		receivers[i].join();
-//                        cs.join();
+//                    	for(int i = 0;i < receivers.length; i++)
+//                    		receivers[i].join();
+                        cs.join();
                         cs.getServersConn().join();
                         tomLayer.join();
                         tomLayer.getDeliveryThread().join();

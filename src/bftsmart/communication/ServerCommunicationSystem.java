@@ -35,13 +35,13 @@ import org.slf4j.LoggerFactory;
  *
  * @author alysson
  */
-public class ServerCommunicationSystem implements Runnable {
+public class ServerCommunicationSystem extends Thread{
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private boolean doWork = true;
     public final long MESSAGE_WAIT_TIME = 100;
-    private final LinkedBlockingQueue<SystemMessage> inQueue;//new LinkedBlockingQueue<SystemMessage>(IN_QUEUE_SIZE);
+    private LinkedBlockingQueue<SystemMessage> inQueue = null;//new LinkedBlockingQueue<SystemMessage>(IN_QUEUE_SIZE);
     protected MessageHandler messageHandler;
     private ServersCommunicationLayer serversConn;
     private CommunicationSystemServerSide clientsConn;
