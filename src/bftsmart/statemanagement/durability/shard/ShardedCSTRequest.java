@@ -152,14 +152,21 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 				commonShards.addAll(chkpntMT.getEqualPageIndexs(lowerLogtMT));
 		}
 		
-		// Set of all shards
-		Integer[] shards = new Integer[this.shardCount];
-		for(int i = 0;i < shardCount; i++)
-			shards[i] = i;
+		System.out.println(shardCount-commonShards.size());
+		nonCommonShards = new Integer[shardCount-commonShards.size()];
+		int count = 0;
+		for(int i = 0;i < shardCount; i++) {
+			if(!commonShards.contains(i)) {
+				nonCommonShards[count] = i;
+				count ++;
+			}
+		}
+		System.out.println(count);
+
 		
-		HashSet<Integer> nonCommonShards = new HashSet<Integer>(Arrays.asList(shards));
-		nonCommonShards.removeAll(commonShards);
-		this.nonCommonShards = nonCommonShards.toArray(new Integer[0]);
+//		HashSet<Integer> nonCommonShards = new HashSet<Integer>(Arrays.asList(noncommon));
+////		nonCommonShards.removeAll(commonShards);
+//		this.nonCommonShards = nonCommonShards.toArray(new Integer[0]);
 		
 		MessageDigest md = null;
 		try {
