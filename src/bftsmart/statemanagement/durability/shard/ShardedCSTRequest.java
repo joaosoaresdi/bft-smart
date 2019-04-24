@@ -143,6 +143,7 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		HashSet<Integer> commonShards = new HashSet<>();
 		if(chkpntMT.getHeight() == upperLogMT.getHeight()) {
 			commonShards.addAll(chkpntMT.getEqualPageIndexs(upperLogMT));
+			// THIS IS TOO HEAVY
 //			if(chkpntMT.getHeight() == lowerLogtMT.getHeight())
 //				commonShards.retainAll(chkpntMT.getEqualPageIndexs(lowerLogtMT));
 		}
