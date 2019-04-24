@@ -24,11 +24,11 @@ if [ "$#" -eq 3 ]; then
 fi
 
 CLIENTS=$1
-CLIENT_ID=$2
+CLIENT_ID=$1
 
 while [ $CLIENTS -gt 0 ]
 do
 	CRT_CLIENT=$((CLIENT_ID + CLIENTS))
-	java -Dlogback.configurationFile="./config/logback.xml" -cp .:./bin:./lib/* bftsmart.demo.ycsb.YCSBClient $CRT_CLIENT $OP_COUNT &
+	java -Dlogback.configurationFile="./config/logback.xml" -cp .:./bin:./lib/* bftsmart.demo.ycsb.YCSBClient $CRT_CLIENT $OP_COUNT
 	((CLIENTS--))
 done
