@@ -145,7 +145,6 @@ public class ShardedStateManager extends DurableStateManager {
 
 	@Override
 	protected void requestState() {
-		CST_start_time = System.currentTimeMillis();
 		
 		logger.trace("");
 		if (tomLayer.requestsTimer != null) {
@@ -178,9 +177,12 @@ public class ShardedStateManager extends DurableStateManager {
 				this.retries = 0;
 				this.statePlusLower = null;
 	
+				CST_start_time = System.currentTimeMillis();
+
 				ShardedCSTSMMessage cstMsg = new ShardedCSTSMMessage(me, waitingCID,TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
 				tomLayer.getCommunication().send(SVController.getCurrentViewOtherAcceptors(), cstMsg);
-//			}
+
+				//			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
