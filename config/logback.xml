@@ -36,21 +36,23 @@
 
 
 	<logger name="bftsmart.tom.ServiceProxy">
-		<level value="DEBUG" />
+		<level value="ERROR" />
+		<appender-ref ref="STDERR" />
 	</logger>
 	
 	<logger name="bftsmart.communication.client">
-		<level value="DEBUG" />
+		<level value="ERROR" />
+		<appender-ref ref="STDERR" />
 	</logger>
 	
 	<logger name="bftsmart.consensus">
-		<level value="DEBUG" />
-		<appender-ref ref="STDOUT-INFO" />
+		<level value="ERROR" />
+		<appender-ref ref="STDERR" />
 	</logger>
 				
 	<logger name="bftsmart.tom">
 		<level value="DEBUG" />
-		<appender-ref ref="STDOUT-INFO" />
+		<appender-ref ref="STDERR" />
 	</logger>
 
 	<logger name="bftsmart.demo">
@@ -71,7 +73,7 @@
 		<appender-ref ref="STDERR" />
 	</logger>
 
-	<root level="ERROR">
+	<root level="OFF">
 		<appender-ref ref="STDERR" />
 	</root>
 
