@@ -82,7 +82,7 @@ public class ShardedStateManager extends DurableStateManager {
 
 		firstReceivedStates.put(smsg.getSender(), (ShardedCSTState)smsg.getState());
 		
-		synchronized (this) {
+		synchronized (queries) {
 			Map<Integer, Integer> replies = queries.get(queryID);
 			if (replies == null) {
 				replies = new ConcurrentHashMap<Integer,Integer> ();
@@ -550,6 +550,7 @@ public class ShardedStateManager extends DurableStateManager {
 	//TODO: increase concurrency
 	//TODO: increase concurrency
 	private static AtomicBoolean CSTfence = new AtomicBoolean(false);
+	
 	@Override
 	public void SMReplyDeliver(SMMessage msg, boolean isBFT) {
 		logger.trace("");
@@ -569,7 +570,7 @@ public class ShardedStateManager extends DurableStateManager {
 				CertifiedDecision currentProof = null;
 
 				if (!appStateOnly) {
-					synchronized (this) {
+					synchronized (receivedRegencies) {
 						receivedRegencies.put(reply.getSender(), reply.getRegency());
 						receivedLeaders.put(reply.getSender(), reply.getLeader());
 						receivedViews.put(reply.getSender(), reply.getView());
@@ -880,6 +881,9 @@ public class ShardedStateManager extends DurableStateManager {
 						lockTimer.unlock();
 						CSTfence.set(false);
 					}
+				}
+				else {
+					// waiting for replies
 				}
 			}
 			else {
