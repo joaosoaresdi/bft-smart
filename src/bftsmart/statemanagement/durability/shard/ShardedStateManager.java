@@ -646,10 +646,25 @@ public class ShardedStateManager extends DurableStateManager {
 							}
 	
 							if (validState) { // validate checkpoint
+								CST_end_time = System.currentTimeMillis();
+								System.out.println("State Transfer process BEFORE REBUILD!");
+								System.out.println("Time: " + (CST_end_time - CST_start_time));
+
 								statePlusLower = rebuildCSTState(lowerState, upperState, (CSTState)chkpntState);
+								
+								CST_end_time = System.currentTimeMillis();								
+								System.out.println("State Transfer process AFTER REBUILD!");
+								System.out.println("Time: " + (CST_end_time - CST_start_time));
+
 								logger.debug("Intalling Checkpoint and replying Lower Log");
 								logger.debug("Installing state plus lower \n" + statePlusLower);
+								
 								dt.getRecoverer().setState(statePlusLower);
+
+								CST_end_time = System.currentTimeMillis();								
+								System.out.println("State Transfer process AFTER SET STATE!");
+								System.out.println("Time: " + (CST_end_time - CST_start_time));
+
 								byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
 								if (!Arrays.equals(currentStateHash, upperState.getCheckpointHash())) {
 									logger.debug("INVALID Checkpoint + Lower Log hash"); 
@@ -797,8 +812,8 @@ public class ShardedStateManager extends DurableStateManager {
 								appStateOnly = false;
 								tomLayer.getSynchronizer().resumeLC();
 							}
-							CST_end_time = System.currentTimeMillis();
 							
+							CST_end_time = System.currentTimeMillis();
 							System.out.println("State Transfer process completed successfuly!");
 							System.out.println("State Transfer duration: " + (CST_end_time - CST_start_time));
 							
