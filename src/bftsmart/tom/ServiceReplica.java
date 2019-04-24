@@ -188,9 +188,16 @@ public class ServiceReplica {
             waitTTPJoinMsgLock.unlock();
         }
     }
-
+    
+    //Modified by JSoares
+    Thread[] receivers;
     private void initReplica() {
-        cs.start();
+    	receivers = new Thread[3];
+    	for(int i =0 ;i < 3; i++)
+    		receivers[i] = new Thread(cs, "Server CS["+i+"]");
+    	for(int i =0 ;i < 3; i++)
+    		receivers[i].start();
+//        cs.start();
         repMan = new ReplyManager(SVController.getStaticConf().getNumRepliers(), cs);
     }
 
@@ -249,7 +256,9 @@ public class ServiceReplica {
                     tomLayer.shutdown();
 
                     try {
-                        cs.join();
+                    	for(int i = 0;i < receivers.length; i++)
+                    		receivers[i].join();
+//                        cs.join();
                         cs.getServersConn().join();
                         tomLayer.join();
                         tomLayer.getDeliveryThread().join();

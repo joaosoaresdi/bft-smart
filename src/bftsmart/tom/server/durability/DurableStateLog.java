@@ -244,6 +244,7 @@ public class DurableStateLog extends StateLog {
     }
     
     //Added by JSoares
+    // TODO: increase efficiency (do not use mem copy use start end indexes)
     private CSTState getShardedState(ShardedCSTRequest cstRequest) {
         int lastCheckpointCID = getLastCheckpointCID();
         int lastCID = getLastCID(); 

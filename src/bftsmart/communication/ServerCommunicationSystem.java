@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author alysson
  */
-public class ServerCommunicationSystem extends Thread {
+public class ServerCommunicationSystem implements Runnable {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -51,7 +51,7 @@ public class ServerCommunicationSystem extends Thread {
      * Creates a new instance of ServerCommunicationSystem
      */
     public ServerCommunicationSystem(ServerViewController controller, ServiceReplica replica) throws Exception {
-        super("Server CS");
+//        super("Server CS");
 
         this.controller = controller;
         
