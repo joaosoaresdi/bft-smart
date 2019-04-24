@@ -456,7 +456,18 @@ public class ShardedStateManager extends DurableStateManager {
 //    		}
 
     		System.out.println(commonShards[0]*shardSize);
-			System.arraycopy(chkpntSer, 0, rebuiltData, commonShards[0]*shardSize, comm_count*shardSize);
+    		int start = 0;
+    		int count = 1;
+    		for(int i = 1; i < comm_count; i++,count++) {
+    			if(commonShards[i] == (commonShards[i-1]+1))
+    				continue;
+    			else {
+    				System.arraycopy(chkpntSer, start*shardSize, rebuiltData, commonShards[i-1]*shardSize, count*shardSize);
+    				start = i;
+    				count = 1;
+    			}
+    		}
+			System.arraycopy(chkpntSer, start*shardSize, rebuiltData, commonShards[start]*shardSize, count*shardSize);
 
     		for(int i = 0;i < noncommonShards.length; i++) {
     			try {
@@ -468,7 +479,7 @@ public class ShardedStateManager extends DurableStateManager {
     		}
 
     		//lowerLog
-    		int count = 0;
+//    		int count = 0;
 //    		for(int i = comm_count; i< (comm_count+third) ; i++, count++) {
 //    			try {
 //    				System.arraycopy(logLowerSer, count*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
