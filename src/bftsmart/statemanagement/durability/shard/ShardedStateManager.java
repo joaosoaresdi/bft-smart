@@ -562,6 +562,7 @@ public class ShardedStateManager extends DurableStateManager {
     	    		System.out.println(start);
     	    		System.out.println(size);
     	    		System.out.println(common_size);
+    	    		System.out.println(i);
     	    		
     				try {
 						Thread.sleep(500);
