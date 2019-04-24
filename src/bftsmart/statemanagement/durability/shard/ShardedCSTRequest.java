@@ -110,13 +110,9 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		ShardedCSTState chkpntState = firstReceivedStates.get(checkpointReplica);
 		ShardedCSTState upperLogState = firstReceivedStates.get(logUpper);
 		ShardedCSTState lowerLogState = firstReceivedStates.get(logLower);
+		
 		if(chkpntState == null || upperLogState == null || lowerLogState == null) {
-			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
-			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
-			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
-			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
-			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
-			
+			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");			
 			System.out.println(chkpntState);
 			System.out.println(upperLogState);
 			System.out.println(lowerLogState);
@@ -162,12 +158,12 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 			}
 		}
 
-		MessageDigest md = null;
-		try {
-			md = MessageDigest.getInstance(hashAlgo);
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		}
+//		MessageDigest md = null;
+//		try {
+//			md = MessageDigest.getInstance(hashAlgo);
+//		} catch (NoSuchAlgorithmException e) {
+//			e.printStackTrace();
+//		}
 		
 		//remove currently available shards in common shards set 
 //		MerkleTree localStateMT = MerkleTree.createTree(md, shardSize, localState);
