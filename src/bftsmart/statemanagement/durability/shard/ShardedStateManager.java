@@ -508,7 +508,7 @@ public class ShardedStateManager extends DurableStateManager {
     			}
     			else {
     				System.out.println("COPYING 2 : " + count + " shards");
-    				System.out.println(i + " FROM : " + commonShards[start] + " TO : " + commonShards[start+i-1]);
+    				System.out.println(i + " FROM : " + commonShards[start] + " TO : " + commonShards[start+count-1]);
     				System.arraycopy(logLowerSer, (start-comm_count)*shardSize, rebuiltData, commonShards[start]*shardSize, count*shardSize);
     				start = comm_count+i;
     				count = 1;
@@ -521,7 +521,7 @@ public class ShardedStateManager extends DurableStateManager {
     		}
 
 			System.out.println("COPYING 3 : " + count + " shards");
-			System.out.println("FROM : " + commonShards[start] + " TO : " + commonShards[start+third-1]);
+			System.out.println("FROM : " + commonShards[start] + " TO : " + commonShards[start+count-1]);
 			System.arraycopy(logLowerSer, (start-comm_count)*shardSize, rebuiltData, commonShards[start]*shardSize, (count)*shardSize);
 			
     		//upperLog
