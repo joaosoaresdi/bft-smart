@@ -558,6 +558,11 @@ public class ShardedStateManager extends DurableStateManager {
     				System.arraycopy(logUpperSer, (start-(comm_count+third))*shardSize, rebuiltData, commonShards[start]*shardSize, count*shardSize);
     				start = comm_count+third+i;
     				count = 1;
+    				
+    	    		System.out.println(start);
+    	    		System.out.println(size);
+    	    		System.out.println(common_size);
+    	    		
     				try {
 						Thread.sleep(500);
 					} catch (InterruptedException e) {
