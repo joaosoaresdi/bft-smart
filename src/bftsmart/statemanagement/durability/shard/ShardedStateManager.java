@@ -470,16 +470,17 @@ public class ShardedStateManager extends DurableStateManager {
     				try {
 						Thread.sleep(500);
 					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
     			}
     		}
 			System.out.println("COPYING 1 : " + count + " shards");
-			System.out.println("FROM : " + commonShards[start] + " TO : " + commonShards[start+count]);
+			System.out.println("FROM : " + commonShards[start] + " TO : " + commonShards[start+count-1]);
 			System.arraycopy(chkpntSer, start*shardSize, rebuiltData, commonShards[start]*shardSize, count*shardSize);
 
     		for(int i = 0;i < noncommonShards.length; i++) {
+    			System.out.println("COPYING : 1 shard");
+    			System.out.println("FROM : " + noncommonShards[i] + " TO : " + noncommonShards[i]);
     			try {
     				System.arraycopy(chkpntSer, (comm_count+i)*shardSize, rebuiltData, noncommonShards[i]*shardSize, shardSize);
     			} catch (Exception e) {
@@ -498,9 +499,30 @@ public class ShardedStateManager extends DurableStateManager {
 //    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
 //    			}
 //    		}
-			System.out.println("COPYING 2 : " + third + " shards");
-			System.out.println("FROM : " + commonShards[comm_count] + " TO : " + commonShards[comm_count+third]);
-			System.arraycopy(logLowerSer, 0, rebuiltData, commonShards[comm_count]*shardSize, (third)*shardSize);
+    		
+    		start = comm_count;
+    		count = 1;
+    		for(int i = 1; i < (third); i++) {
+    			if(commonShards[i+start] == (commonShards[start+i-1]+1)) {
+    				count ++;
+    			}
+    			else {
+    				System.out.println("COPYING 2 : " + count + " shards");
+    				System.out.println(i + " FROM : " + commonShards[start] + " TO : " + commonShards[start+i-1]);
+    				System.arraycopy(logLowerSer, (start-comm_count)*shardSize, rebuiltData, commonShards[start]*shardSize, count*shardSize);
+    				start = comm_count+i;
+    				count = 1;
+    				try {
+						Thread.sleep(500);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+    			}
+    		}
+
+			System.out.println("COPYING 3 : " + count + " shards");
+			System.out.println("FROM : " + commonShards[start] + " TO : " + commonShards[start+third-1]);
+			System.arraycopy(logLowerSer, (start-comm_count)*shardSize, rebuiltData, commonShards[start]*shardSize, (count)*shardSize);
 			
     		//upperLog
        		int size = (common_size) - (comm_count+third);
