@@ -53,10 +53,10 @@ public abstract class StateManager {
 	protected ExecutionManager execManager;
 
 	protected ConcurrentHashMap<Integer, ApplicationState> receivedStates = null; //received application state
-	protected HashMap<Integer, View> receivedViews = null;
-	protected HashMap<Integer, Integer> receivedRegencies = null;
-	protected HashMap<Integer, Integer> receivedLeaders = null;
-	protected HashMap<Integer, CertifiedDecision> receivedProofs = null;
+	protected ConcurrentHashMap<Integer, View> receivedViews = null;
+	protected ConcurrentHashMap<Integer, Integer> receivedRegencies = null;
+	protected ConcurrentHashMap<Integer, Integer> receivedLeaders = null;
+	protected ConcurrentHashMap<Integer, CertifiedDecision> receivedProofs = null;
 
 	protected boolean appStateOnly;
 	protected int waitingCID = -1;
@@ -69,10 +69,10 @@ public abstract class StateManager {
 
 	public StateManager() {
 		receivedStates = new ConcurrentHashMap<>();
-		receivedViews = new HashMap<>();
-		receivedRegencies = new HashMap<>();
-		receivedLeaders = new HashMap<>();
-		receivedProofs = new HashMap<>();
+		receivedViews = new ConcurrentHashMap<>();
+		receivedRegencies = new ConcurrentHashMap<>();
+		receivedLeaders = new ConcurrentHashMap<>();
+		receivedProofs = new ConcurrentHashMap<>();
 	}
 
 	protected int getReplies() {

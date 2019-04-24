@@ -413,14 +413,15 @@ public class ShardedStateManager extends DurableStateManager {
 		logger.debug("rebuilding state");
 
 		byte[] rebuiltData = new byte[shardedCSTConfig.getShardCount() * shardedCSTConfig.getShardSize()];
-		//TODO: current state should be copied directly into chkpntData
-		// unecessary 2 arraycopies
-		byte[] currState = dt.getRecoverer().getState(this.lastCID, true).getSerializedState();
 		
-		if(currState != null) {
-			int length = currState.length > rebuiltData.length ? rebuiltData.length : currState.length;
-			System.arraycopy(currState, 0, rebuiltData, 0, length);
-		}
+		//TODO: current state should be copied directly into chkpntData
+		// REMOVED SINCE IM NOT TREATING PREVIOUS EXISTING STATE
+		// unecessary 2 arraycopies
+//		byte[] currState = dt.getRecoverer().getState(this.lastCID, true).getSerializedState();
+//		if(currState != null) {
+//			int length = currState.length > rebuiltData.length ? rebuiltData.length : currState.length;
+//			System.arraycopy(currState, 0, rebuiltData, 0, length);
+//		}
 		
 		if(statePlusLower != null)
 			rebuiltData = statePlusLower.getSerializedState();
@@ -549,9 +550,6 @@ public class ShardedStateManager extends DurableStateManager {
 //		}	
 	}
 	
-	//TODO: increase concurrency
-	//TODO: increase concurrency
-	//TODO: increase concurrency
 	private static AtomicBoolean CSTfence = new AtomicBoolean(false);
 	
 	@Override
@@ -573,7 +571,7 @@ public class ShardedStateManager extends DurableStateManager {
 				CertifiedDecision currentProof = null;
 
 				if (!appStateOnly) {
-					synchronized (receivedRegencies) {
+//					synchronized (receivedRegencies) {
 						receivedRegencies.put(reply.getSender(), reply.getRegency());
 						receivedLeaders.put(reply.getSender(), reply.getLeader());
 						receivedViews.put(reply.getSender(), reply.getView());
@@ -590,7 +588,7 @@ public class ShardedStateManager extends DurableStateManager {
 								logger.warn("Not a member!");
 							}
 						}
-					}
+//					}
 				} else {
 					currentLeader = tomLayer.execManager.getCurrentLeader();
 					currentRegency = tomLayer.getSynchronizer().getLCManager().getLastReg();
