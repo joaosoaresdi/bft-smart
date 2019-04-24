@@ -536,9 +536,10 @@ public class ShardedStateManager extends DurableStateManager {
 //		else {
 			if(statePlusLower == null)
 				return new ShardedCSTState(rebuiltData,
-						TOMUtil.getBytes(((ShardedCSTState)chkpntState).getSerializedState()),
-						stateLower.get().getLogLower(), ((ShardedCSTState)chkpntState).getLogLowerHash(), null, null,
-						((ShardedCSTState)chkpntState).getCheckpointCID(), stateUpper.get().getCheckpointCID(), SVController.getStaticConf().getProcessId(), ((ShardedCSTState)chkpntState).getHashAlgo(), ((ShardedCSTState)chkpntState).getShardSize(), false);
+						TOMUtil.computeHash(rebuiltData),
+						logLowerState.getLogLower(), ((ShardedCSTState)chkpntState).getLogLowerHash(), null, null,
+						((ShardedCSTState)chkpntState).getCheckpointCID(), logUpperState.getCheckpointCID(), 
+						SVController.getStaticConf().getProcessId(), ((ShardedCSTState)chkpntState).getHashAlgo(), ((ShardedCSTState)chkpntState).getShardSize(), false);
 			else {
 				statePlusLower.setSerializedState(rebuiltData);
 				return statePlusLower;
