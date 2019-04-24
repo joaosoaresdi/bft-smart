@@ -41,7 +41,7 @@ public class ServerCommunicationSystem implements Runnable {
 
     private boolean doWork = true;
     public final long MESSAGE_WAIT_TIME = 100;
-    private LinkedBlockingQueue<SystemMessage> inQueue = null;//new LinkedBlockingQueue<SystemMessage>(IN_QUEUE_SIZE);
+    private final LinkedBlockingQueue<SystemMessage> inQueue;//new LinkedBlockingQueue<SystemMessage>(IN_QUEUE_SIZE);
     protected MessageHandler messageHandler;
     private ServersCommunicationLayer serversConn;
     private CommunicationSystemServerSide clientsConn;
