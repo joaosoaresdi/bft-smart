@@ -68,10 +68,12 @@
 	</logger>
 	
 	<logger name="io.netty">
-		<level value="OFF" />
+		<level value="ERROR" />
+		<appender-ref ref="STDERR" />
 	</logger>
 
-	<root level="OFF">
+	<root level="ERROR">
+		<appender-ref ref="STDERR" />
 	</root>
 
 </configuration>
