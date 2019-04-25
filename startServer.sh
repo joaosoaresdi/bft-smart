@@ -19,6 +19,6 @@ RUNS=$2
 while [ $RUNS -gt 0 ]
 do
 	./cleanUp.sh;
-	./startReplicaYCSB.sh $REPLICA_INDEX > ((RUNS)).out
+	./startReplicaYCSB.sh $REPLICA_INDEX > "run".$RUNS.".out"
 	((RUNS--))
 done
