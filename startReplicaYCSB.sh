@@ -16,4 +16,6 @@
 
 REPLICA_INDEX=$1
 
+git pull origin master;
+./cleanUp.sh;
 java -Dlogback.configurationFile="./config/logback.xml" -Xms30g -Xmx38g -cp .:./bin:./lib/* bftsmart.demo.ycsb.YCSBServer $REPLICA_INDEX
