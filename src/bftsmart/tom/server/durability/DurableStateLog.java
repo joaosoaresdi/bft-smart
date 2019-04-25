@@ -264,6 +264,9 @@ public class DurableStateLog extends StateLog {
 			half = (common_size/2);
         
 		int comm_count = third - nonCommon_size;
+		System.out.println("THIRD : " + third);
+		System.out.println("HALF : " + half);
+		System.out.println("comm_count : " + comm_count);
 
 		if(id == cstRequest.getCheckpointReplica()) {
             // This replica is expected to send the checkpoint plus the hashes of lower and upper log portions
@@ -273,9 +276,9 @@ public class DurableStateLog extends StateLog {
 
             byte[] data;
         	if(nonCommon_size < third) {
-        		data = new byte[(comm_count+nonCommon_size)*shardSize];
+        		data = new byte[third*shardSize];
 
-    			System.arraycopy(ckpState, 0, data, commonShards[0]*shardSize, shardSize);
+    			System.arraycopy(ckpState, commonShards[0]*shardSize, data, 0 , shardSize);
     			System.arraycopy(ckpState, commonShards[1]*shardSize, data, shardSize, (comm_count-1)*shardSize);
 
         		for(int i = 0;i < noncommonShards.length; i++) {
@@ -305,7 +308,7 @@ public class DurableStateLog extends StateLog {
             byte[] data;
         	if(nonCommon_size < third) {
                 data = new byte[third*shardSize];
-    			System.arraycopy(ckpState, commonShards[comm_count]*shardSize, data, 0 , (third)*shardSize);
+    			System.arraycopy(ckpState, commonShards[comm_count]*shardSize, data, 0 , third*shardSize);
         	}
         	else {
                 data = new byte[half*shardSize];

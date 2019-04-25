@@ -107,7 +107,7 @@ public class FileRecoverer {
 
         return null;
     }
-
+/*
     // modified by JSoares
     // TODO: [JSoares] - modify this to only read the required bytes from the file, instead of the entire checkpoint
     public byte[] getCkpState(String ckpPath, Integer[] shards, int shardSize) {
@@ -153,7 +153,7 @@ public class FileRecoverer {
         }
         return null;
     }
-
+*/
     public byte[] getCkpState(String ckpPath) {
         RandomAccessFile ckp = null;
 
