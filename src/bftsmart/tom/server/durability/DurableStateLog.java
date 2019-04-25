@@ -249,7 +249,11 @@ public class DurableStateLog extends StateLog {
         int lastCheckpointCID = getLastCheckpointCID();
         int lastCID = getLastCID(); 
         
-        int nonCommon_size = cstRequest.getNonCommonShards().length;
+		Integer[] noncommonShards = cstRequest.getNonCommonShards();
+		Integer[] commonShards = cstRequest.getCommonShards();
+
+		int shardSize = cstRequest.getShardSize();
+		int nonCommon_size = cstRequest.getNonCommonShards().length;
         int common_size = cstRequest.getCommonShards().length;
         
         int third = (nonCommon_size+common_size)/3;
@@ -259,107 +263,85 @@ public class DurableStateLog extends StateLog {
 		else 
 			half = (common_size/2);
         
-        Integer[] assignedShards;
-        if(id == cstRequest.getCheckpointReplica()) {
-            // This replica is expected to send the checkpoint plus the hashes of lower and upper log portions
-        	logger.debug("[ChkPnt Replica] sending shards : " + cstRequest.getNonCommonShards().length);
-        	System.out.println("############# CheckpointReplica.getState.shards #############");
+		int comm_count = third - nonCommon_size;
 
+		if(id == cstRequest.getCheckpointReplica()) {
+            // This replica is expected to send the checkpoint plus the hashes of lower and upper log portions
+    		checkpointLock.lock();
+            byte[] ckpState = fr.getCkpState(lastCkpPath);
+            checkpointLock.unlock(); 
+
+            byte[] data;
         	if(nonCommon_size < third) {
-        		int remaining = third - nonCommon_size;
-        		assignedShards = new Integer[nonCommon_size+remaining];
-        		System.out.println("From NonCommonShards[" + 0 + " .. " + (nonCommon_size) +"]");
-        		System.out.println("From CommonShards[" + 0 + " .. " + (remaining) +"]");
-        		
-        		System.arraycopy(cstRequest.getCommonShards(), 0, assignedShards, 0, remaining);
-        		System.arraycopy(cstRequest.getNonCommonShards(), 0, assignedShards, remaining, nonCommon_size);
-        		
-        		//Arrays.sort(assignedShards);
+        		data = new byte[(comm_count+nonCommon_size)*shardSize];
+
+    			System.arraycopy(ckpState, 0, data, commonShards[0]*shardSize, shardSize);
+    			System.arraycopy(ckpState, commonShards[1]*shardSize, data, shardSize, (comm_count-1)*shardSize);
+
+        		for(int i = 0;i < noncommonShards.length; i++) {
+    				System.arraycopy(ckpState, noncommonShards[i]*shardSize, data, (comm_count+i)*shardSize, shardSize);
+        		}
         	}
         	else {
-        		assignedShards = new Integer[nonCommon_size];
-        		System.out.println("From NonCommonShards[" + 0 + " .. " + (nonCommon_size) +"]");
-        		System.arraycopy(cstRequest.getNonCommonShards(), 0, assignedShards, 0, nonCommon_size);
+        		data = new byte[nonCommon_size*shardSize];
+        		for(int i = 0;i < noncommonShards.length; i++) {
+    				System.arraycopy(ckpState, noncommonShards[i]*shardSize, data, i*shardSize, shardSize);
+        		}
         	}
         	
-        	System.out.println("Assigned Shards.length : " + assignedShards.length);
-//        	System.out.println(Arrays.toString(assignedShards));
-            checkpointLock.lock();
-            byte[] ckpState = fr.getCkpState(lastCkpPath, assignedShards, cstRequest.getShardSize());
-            checkpointLock.unlock();
-
             CommandsInfo[] logLower = fr.getLogState(cstRequest.getLogLowerSize(), logPath);
             CommandsInfo[] logUpper = fr.getLogState(logPointers.get(cstRequest.getLogUpper()), 0, cstRequest.getLogUpperSize(), logPath);
 
             byte[] logLowerHash = CommandsInfo.computeHash(logLower);
             byte[] logUpperHash = CommandsInfo.computeHash(logUpper);
             
-            ShardedCSTState cstState = new ShardedCSTState(ckpState, null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+            ShardedCSTState cstState = new ShardedCSTState(data, null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
             return cstState;
         } else if(id == cstRequest.getLogLower()) {
             // This replica is expected to send the lower part of the log and a subset of common shards; [0, (length/2)]
-        	
-        	System.out.println("############# LogLowerReplica.getState.shards #############");
-        	System.out.println("Common Shards.length : " + common_size);
+    		checkpointLock.lock();
+            byte[] ckpState = fr.getCkpState(lastCkpPath);
+            checkpointLock.unlock();
+            byte[] data;
         	if(nonCommon_size < third) {
-        		int start = third-nonCommon_size;
-        		assignedShards = new Integer[third];
-        		System.out.println("From CommonShards[" + start + " .. " + (start+third) +"]");
-        		System.arraycopy(cstRequest.getCommonShards(), start, assignedShards, 0, third);
+                data = new byte[third*shardSize];
+    			System.arraycopy(ckpState, commonShards[comm_count]*shardSize, data, 0 , (third)*shardSize);
         	}
         	else {
-        		assignedShards = new Integer[half];
-        		System.out.println("From CommonShards[" + 0 + " .. " + (half) +"]");
-        		System.arraycopy(cstRequest.getCommonShards(), 0, assignedShards, 0, half);
+                data = new byte[half*shardSize];
+        		for(int i = 0;i < half; i++) {
+					System.arraycopy(ckpState, commonShards[i]*shardSize, data, i*shardSize, shardSize);
+        		}
         	}
 
-//        	assignedShards = new Integer[shard_count];
-//        	if(nonCommon_size >= shard_count) {
-//        	} else {
-//        		System.arraycopy(cstRequest.getCommonShards(), shard_count, assignedShards, 0, shard_count);
-//        	}
-
-        	System.out.println("Assigned Shards.length : " + assignedShards.length);
-//        	System.out.println(Arrays.toString(assignedShards));
-        	checkpointLock.lock();
-            byte[] ckpState = fr.getCkpState(lastCkpPath, assignedShards, cstRequest.getShardSize());
-            checkpointLock.unlock(); 
-
             CommandsInfo[] logLower = fr.getLogState(logPointers.get(cstRequest.getCheckpointReplica()), 0, cstRequest.getLogLowerSize(), logPath);
-            ShardedCSTState cstState = new ShardedCSTState(ckpState, null, logLower, null, null, null, lastCheckpointCID, lastCID, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+            ShardedCSTState cstState = new ShardedCSTState(data, null, logLower, null, null, null, lastCheckpointCID, lastCID, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
             return cstState;
         } else { //upperLog
             // This replica is expected to send the upper part of the log; the hash for its checkpoint; and the second half of shared shards; [length/2, length]
-
-        	System.out.println("############# LogUpperReplica.getState.shards #############");
-        	System.out.println("Common Shards.length : " + common_size);
-        	
-        	if(nonCommon_size < third) {
-        		int start = (2*third)-nonCommon_size;
-        		int size = (common_size) - start;
-        		System.out.println("From CommonShards[" + start + " .. " + (start+size) +"]");
-        		assignedShards = new Integer[size];
-        		System.arraycopy(cstRequest.getCommonShards(), start, assignedShards, 0, size);
-        	}
-        	else {
-        		assignedShards = new Integer[half];
-        		System.out.println("From CommonShards[" + half + " .. " + (common_size) +"]");
-        		System.arraycopy(cstRequest.getCommonShards(), half, assignedShards, 0, common_size-half);
-        	}
- 	
-        	System.out.println("Assigned Shards.length : " + assignedShards.length);
-//        	System.out.println(Arrays.toString(assignedShards));
-
         	checkpointLock.lock();
             fr.recoverCkpHash(lastCkpPath);
             byte[] ckpHash = fr.getCkpStateHash();
-            byte[] ckpState = fr.getCkpState(lastCkpPath, assignedShards, cstRequest.getShardSize());
+            byte[] ckpState = fr.getCkpState(lastCkpPath);
             checkpointLock.unlock();
-            
+        	
+            byte[] data;
+        	if(nonCommon_size < third) {
+        		int start = (comm_count + third);
+        		int size = nonCommon_size-start;
+                data = new byte[size*shardSize];
+    			System.arraycopy(ckpState, commonShards[start]*shardSize, data, 0 ,size*shardSize);
+        	}
+        	else {
+                data = new byte[half*shardSize];
+        		for(int i = 0;i < half; i++) {
+					System.arraycopy(ckpState, commonShards[i]*shardSize, data, i*shardSize, shardSize);
+        		}
+        	}
             CommandsInfo[] logUpper = fr.getLogState(cstRequest.getLogUpperSize(), logPath);
 
             int lastCIDInState = lastCheckpointCID + cstRequest.getLogUpperSize();
-            ShardedCSTState cstState = new ShardedCSTState(ckpState, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
 //            ShardedCSTState cstState = new ShardedCSTState(null, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
             return cstState;
         }

@@ -794,7 +794,7 @@ public class ShardedStateManager extends DurableStateManager {
 									e.propValue = currentProof.getDecision();
 									e.deserializedPropValue = tomLayer.checkProposedValue(currentProof.getDecision(), false);
 									cons.decided(e, false);
-									logger.info("Successfully installed proof for consensus " + waitingCID);
+									logger.debug("Successfully installed proof for consensus " + waitingCID);
 								} else {
 									//NOTE [JSoares]: if this happens shouldn't the transfer process stop????
 									logger.debug("Failed to install proof for consensus " + waitingCID);
@@ -849,6 +849,10 @@ public class ShardedStateManager extends DurableStateManager {
 	
 							logger.info("State Transfer process completed successfuly!");
 							
+							stateTransferEndTime = System.currentTimeMillis();
+							System.out.println("State Transfer process completed successfuly!");
+							System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
+			
 							reset(true);
 							
 							tomLayer.requestsTimer.Enabled(true);
@@ -863,9 +867,6 @@ public class ShardedStateManager extends DurableStateManager {
 								tomLayer.getSynchronizer().resumeLC();
 							}
 							
-							stateTransferEndTime = System.currentTimeMillis();
-							System.out.println("State Transfer process completed successfuly!");
-							System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 							
 						} else if (chkpntState == null
 								&& (SVController.getCurrentViewN() / 2) < getReplies()) {

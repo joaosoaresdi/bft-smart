@@ -328,10 +328,6 @@ public class DurableStateManager extends StateManager {
 							&& currentView != null && validState && (!isBFT || currentProof != null || appStateOnly)) {
 						logger.debug("---- RECEIVED VALID STATE ----");
 
-						logger.debug("The state of those replies is good!");
-						logger.debug("CID State requested: " + reply.getCID());
-						logger.debug("CID State received: " + stateUpper.get().getLastCID());
-
 						tomLayer.getSynchronizer().getLCManager().setLastReg(currentRegency);
 						tomLayer.getSynchronizer().getLCManager().setNextReg(currentRegency);
 						tomLayer.getSynchronizer().getLCManager().setNewLeader(currentLeader);
@@ -339,7 +335,6 @@ public class DurableStateManager extends StateManager {
 						tomLayer.execManager.setNewLeader(currentLeader);
 
 						if (currentProof != null && !appStateOnly) {
-
 							logger.debug("Installing proof for consensus " + waitingCID);
 
 							Consensus cons = execManager.getConsensus(waitingCID);
@@ -385,12 +380,14 @@ public class DurableStateManager extends StateManager {
 							tomLayer.getSynchronizer().removeSTOPretransmissions(currentRegency - 1);
 						}
 
-						logger.debug("trying to acquire deliverlock");
+						logger.debug("Trying to acquire deliverlock");
 						dt.deliverLock();
-						logger.debug("acquired");
+						logger.debug("Successfuly acquired deliverlock");
 
 						// this makes the isRetrievingState() evaluates to false
 						waitingCID = -1;
+						
+						logger.debug("Updating state with Upper Log operations");
 						dt.update(stateUpper.get());
 
 						// Deal with stopped messages that may come from
@@ -406,7 +403,7 @@ public class DurableStateManager extends StateManager {
 							execManager.restart();
 						}
 
-						logger.info("Processing out of context messages");
+						logger.debug("Processing out of context messages");
 						tomLayer.processOutOfContext();
 
 						if (SVController.getCurrentViewId() != currentView.getId()) {
@@ -419,12 +416,17 @@ public class DurableStateManager extends StateManager {
 						dt.canDeliver();
 						dt.deliverUnlock();
 
-						reset();
+						logger.info("State Transfer process completed successfuly!");
+						
+						stateTransferEndTime = System.currentTimeMillis();
+						System.out.println("State Transfer process completed successfuly!");
+						System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 
-						logger.info("I updated the state!");
+						reset();
 
 						tomLayer.requestsTimer.Enabled(true);
 						tomLayer.requestsTimer.startTimer();
+						
 						if (stateTimer != null) {
 							stateTimer.cancel();
 						}
@@ -433,16 +435,10 @@ public class DurableStateManager extends StateManager {
 							appStateOnly = false;
 							tomLayer.getSynchronizer().resumeLC();
 						}
-						stateTransferEndTime = System.currentTimeMillis();
-						System.out.println("State Transfer process completed successfuly!");
-						System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
+						
 
 					} else if (chkpntState == null && (SVController.getCurrentViewN() / 2) < getReplies()) {
 						logger.warn("---- DIDNT RECEIVE STATE ----");
-
-						logger.debug("I have more than "
-								+ (SVController.getCurrentViewN() / 2)
-								+ " messages that are no good!");
 
 						waitingCID = -1;
 						reset();
@@ -455,9 +451,7 @@ public class DurableStateManager extends StateManager {
 							requestState();
 						}
 					} else if (!validState) {
-						logger.warn("---- RECEIVED INVALID STATE  ----");
-
-						logger.debug("The replica from which I expected the state, sent one which doesn't match the hash of the others, or it never sent it at all");
+						logger.debug("---- RECEIVED INVALID STATE  ----");
 
 						reset();
 						requestState();

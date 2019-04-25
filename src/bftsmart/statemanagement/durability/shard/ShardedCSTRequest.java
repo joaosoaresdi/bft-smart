@@ -122,15 +122,15 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		MerkleTree upperLogMT = upperLogState.getMerkleTree();
 		MerkleTree lowerLogtMT = lowerLogState.getMerkleTree();
 
-		System.out.println("chkpntMT.getLeafCount() : " + chkpntMT.getLeafCount());
-		System.out.println("chkpntMT.getHeight() : " + chkpntMT.getHeight());
-
-		System.out.println("upperLogMT.getLeafCount() : " + upperLogMT.getLeafCount());
-		System.out.println("upperLogMT.getHeight() : " + upperLogMT.getHeight());
-
-		System.out.println("lowerLogtMT.getLeafCount() : " + lowerLogtMT.getLeafCount());
-		System.out.println("lowerLogtMT.getHeight() : " + lowerLogtMT.getHeight());
-
+//		System.out.println("chkpntMT.getLeafCount() : " + chkpntMT.getLeafCount());
+//		System.out.println("chkpntMT.getHeight() : " + chkpntMT.getHeight());
+//
+//		System.out.println("upperLogMT.getLeafCount() : " + upperLogMT.getLeafCount());
+//		System.out.println("upperLogMT.getHeight() : " + upperLogMT.getHeight());
+//
+//		System.out.println("lowerLogtMT.getLeafCount() : " + lowerLogtMT.getLeafCount());
+//		System.out.println("lowerLogtMT.getHeight() : " + lowerLogtMT.getHeight());
+//
 		this.shardCount = chkpntMT.getLeafCount();		
 
 		//Common shards between other replicas
@@ -146,7 +146,7 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 				commonShards = chkpntMT.getEqualPageIndexs(lowerLogtMT);
 		}
 		
-		System.out.println(shardCount-commonShards.size());
+//		System.out.println(shardCount-commonShards.size());
 		nonCommonShards = new Integer[shardCount-commonShards.size()];
 		int count = 0;
 		for(int i = 0;i < shardCount; i++) {
@@ -173,8 +173,8 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		this.commonShards = commonShards.toArray(new Integer[0]);
 		Arrays.sort(this.commonShards);
 		
-		System.out.println("COMMON SHARDS : " + this.commonShards.length);
-		System.out.println("NONCOMMON SHARDS : " + this.nonCommonShards.length);
+//		System.out.println("COMMON SHARDS : " + this.commonShards.length);
+//		System.out.println("NONCOMMON SHARDS : " + this.nonCommonShards.length);
 	}
 
 	public void reAssignShards(Integer[] faultyShards) {
