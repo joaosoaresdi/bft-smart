@@ -21,7 +21,7 @@ while [ $X -lt $RUNS ]
 do	
 	echo "Starting run"$X" ...";
 	./cleanUp.sh;
-	./startReplicaYCSB.sh $REPLICA_INDEX > "run"$RUNS".out";
-	echo "Ended run".$X."!";
+	./startReplicaYCSB.sh $REPLICA_INDEX > "run"$X".out";
+	echo "Ended run"$X"!";
 	((X++))
 done
