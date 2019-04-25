@@ -40,6 +40,7 @@ public class StateSenderRunnable implements Runnable {
 	@Override
 	public void run() {
 		logger.debug("State transfer started (socket: {})", socket);
+		logger.debug("State transfer started (socket: {})", socket);
 		try {
 			OutputStream os = socket.getOutputStream();
 			ObjectOutputStream oos = new ObjectOutputStream(os);
@@ -49,7 +50,8 @@ public class StateSenderRunnable implements Runnable {
 			oos.close();
 			os.close();
 			logger.debug("Replica state transfer successful (bytes: {}, socket: {})", state.getSerializedState().length, socket);
-		} catch (IOException e) {
+			logger.debug("Replica state transfer successful (bytes: {}, socket: {})", state.getSerializedState().length, socket);
+		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("Error during state transfer",e);
 		} finally {
