@@ -138,8 +138,8 @@ public class ShardedStateManager extends DurableStateManager {
 		}
 	}
 
-	private long CST_start_time;
-	private long CST_end_time;
+	private long stateTransferStartTime;
+	private long stateTransferEndTime;
 	
 	private int retries = 0;
 
@@ -177,7 +177,7 @@ public class ShardedStateManager extends DurableStateManager {
 				this.retries = 0;
 				this.statePlusLower = null;
 	
-				CST_start_time = System.currentTimeMillis();
+				stateTransferStartTime = System.currentTimeMillis();
 
 				ShardedCSTSMMessage cstMsg = new ShardedCSTSMMessage(me, waitingCID,TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
 				tomLayer.getCommunication().send(SVController.getCurrentViewOtherAcceptors(), cstMsg);
@@ -203,6 +203,7 @@ public class ShardedStateManager extends DurableStateManager {
 	@Override
 	public void SMRequestDeliver(SMMessage msg, boolean isBFT) {
 		logger.trace("");
+		long t0 = System.currentTimeMillis();
 		if (SVController.getStaticConf().isStateTransferEnabled()
 				&& dt.getRecoverer() != null) {
 			logger.info("Received State Transfer Request from " + msg.getSender());
@@ -228,6 +229,11 @@ public class ShardedStateManager extends DurableStateManager {
 					SVController.getCurrentView(), tomLayer.getSynchronizer().getLCManager().getLastReg(),
 					tomLayer.execManager.getCurrentLeader());
 
+			long t1 = System.currentTimeMillis();
+			System.out.println("############# Time to send State : \t" + (t1-t0));
+			System.out.println("############# Time to send State : \t" + (t1-t0));
+			System.out.println("############# Time to send State : \t" + (t1-t0));
+			System.out.println("############# Time to send State : \t" + (t1-t0));
 			logger.info("Sending reply {}", reply);
 			tomLayer.getCommunication().send(new int[]{msg.getSender()}, reply);
 		}
@@ -608,9 +614,6 @@ public class ShardedStateManager extends DurableStateManager {
 		if (SVController.getStaticConf().isStateTransferEnabled()) {
 			logger.debug("The state transfer protocol is enabled");
 			logger.debug("Received a CSTMessage from {} ", reply.getSender());
-//			logger.debug("\n My current state is : \n \t waiting CID : " + waitingCID +
-//					"\n \t last CID : " + lastCID + 
-//					"\n \t query ID :  " + queryID);
 
 			if (waitingCID != -1 && reply.getCID() == waitingCID) {
 				int currentRegency = -1;
@@ -694,24 +697,29 @@ public class ShardedStateManager extends DurableStateManager {
 							}
 	
 							if (validState) { // validate checkpoint
-								CST_end_time = System.currentTimeMillis();
-								System.out.println("State Transfer process BEFORE REBUILD!");
-								System.out.println("Time: " + (CST_end_time - CST_start_time));
 
+								stateTransferEndTime = System.currentTimeMillis();
+								System.out.println("State Transfer process BEFORE statePlusLower/REBUILD!");
+								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
+								
 								statePlusLower = rebuildCSTState(lowerState, upperState, (CSTState)chkpntState);
 								
-								CST_end_time = System.currentTimeMillis();
-								System.out.println("State Transfer process AFTER REBUILD!");
-								System.out.println("Time: " + (CST_end_time - CST_start_time));
+								stateTransferEndTime = System.currentTimeMillis();
+								System.out.println("State Transfer process AFTER statePlusLower/REBUILD!");
+								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 
 								logger.debug("Intalling Checkpoint and replying Lower Log");
 								logger.debug("Installing state plus lower \n" + statePlusLower);
 								
+								stateTransferEndTime = System.currentTimeMillis();
+								System.out.println("State Transfer process BEFORE setState!");
+								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
+
 								dt.getRecoverer().setState(statePlusLower);
 
-								CST_end_time = System.currentTimeMillis();								
+								stateTransferEndTime = System.currentTimeMillis();								
 								System.out.println("State Transfer process AFTER SET STATE!");
-								System.out.println("Time: " + (CST_end_time - CST_start_time));
+								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 
 								byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
 								if (!Arrays.equals(currentStateHash, upperState.getCheckpointHash())) {
@@ -861,9 +869,9 @@ public class ShardedStateManager extends DurableStateManager {
 								tomLayer.getSynchronizer().resumeLC();
 							}
 							
-							CST_end_time = System.currentTimeMillis();
+							stateTransferEndTime = System.currentTimeMillis();
 							System.out.println("State Transfer process completed successfuly!");
-							System.out.println("State Transfer duration: " + (CST_end_time - CST_start_time));
+							System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 							
 						} else if (chkpntState == null
 								&& (SVController.getCurrentViewN() / 2) < getReplies()) {

@@ -69,7 +69,6 @@ public class DurableStateManager extends StateManager {
 	long stateTransferEndTime;
 	@Override
 	protected void requestState() {
-		stateTransferStartTime = System.currentTimeMillis();
 		logger.trace("");
 
 		if (tomLayer.requestsTimer != null) {
@@ -85,6 +84,9 @@ public class DurableStateManager extends StateManager {
 		cst.defineReplicas(otherProcesses, globalCkpPeriod, me);
 		this.cstConfig = cst;
 		
+		//start timer
+		stateTransferStartTime = System.currentTimeMillis();
+
 		CSTSMMessage cstMsg = new CSTSMMessage(me, waitingCID,
 				TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
 
@@ -122,6 +124,7 @@ public class DurableStateManager extends StateManager {
 	@Override
 	public void SMRequestDeliver(SMMessage msg, boolean isBFT) {
 		logger.trace("");
+		long t0 = System.currentTimeMillis();
 		if (SVController.getStaticConf().isStateTransferEnabled()
 				&& dt.getRecoverer() != null) {
 			logger.info("The state transfer protocol is enabled");
@@ -149,6 +152,11 @@ public class DurableStateManager extends StateManager {
 					SVController.getCurrentView(), tomLayer.getSynchronizer().getLCManager().getLastReg(),
 					tomLayer.execManager.getCurrentLeader());
 
+			long t1 = System.currentTimeMillis();
+			System.out.println("############# Time to send State : \t" + (t1-t0));
+			System.out.println("############# Time to send State : \t" + (t1-t0));
+			System.out.println("############# Time to send State : \t" + (t1-t0));
+			System.out.println("############# Time to send State : \t" + (t1-t0));
 			logger.info("Sending reply {}", reply);
 			int[] targets = {msg.getSender()};
 			tomLayer.getCommunication().send(targets, reply);
@@ -164,13 +172,8 @@ public class DurableStateManager extends StateManager {
 		lockTimer.lock();
 		CSTSMMessage reply = (CSTSMMessage) msg;
 		if (SVController.getStaticConf().isStateTransferEnabled()) {
-			logger.info("The state transfer protocol is enabled");
-			logger.info("Received a CSTMessage {} ", reply);
-
-			logger.info("\n My current state is : \n \t waiting CID : " + waitingCID +
-					"\n \t last CID : " + lastCID + 
-					"\n \t query ID :  " + queryID);
-
+			logger.debug("The state transfer protocol is enabled");
+			logger.debug("Received a CSTMessage {} ", reply);
 
 			if (waitingCID != -1 && reply.getCID() == waitingCID) {
 				int currentRegency = -1;
@@ -212,7 +215,7 @@ public class DurableStateManager extends StateManager {
 				Socket clientSocket;
 				ApplicationState stateReceived = null; 
 				try {
-					logger.info("Opening connection to peer {} to fetch CSTState", address);
+					logger.debug("Opening connection to peer {} to fetch CSTState", address);
 					clientSocket = new Socket(address.getHostName(),
 							address.getPort());
 					ObjectInputStream in = new ObjectInputStream(
@@ -226,22 +229,19 @@ public class DurableStateManager extends StateManager {
 				} catch (ClassNotFoundException e) {
 					logger.error("Failed to deserialize application state object", e);
 				}
-				logger.info("Received CSTState: " + stateReceived);
-
 
 				if (stateReceived instanceof CSTState) {
-
 					receivedStates.put(reply.getSender(), stateReceived);
 					if (reply.getSender() == cstConfig.getCheckpointReplica()) {
-						logger.info("Received CHECKPOINT");
+						logger.debug("Received State from Checkpoint Replica\n");
 						this.chkpntState = (CSTState) stateReceived;
 					}
 					if (reply.getSender() == cstConfig.getLogLower()) {
-						logger.info("Received Lower Log");
+						logger.debug("Received State from Lower Log Replica\n");
 						stateLower.set((CSTState) stateReceived);
 					}
 					if (reply.getSender() == cstConfig.getLogUpper()) {
-						logger.info("Received Upper Log");
+						logger.debug("Received State from Upper Log Replica\n");
 						stateUpper.set((CSTState) stateReceived);
 					}
 				}
@@ -262,37 +262,44 @@ public class DurableStateManager extends StateManager {
 						// validate lower log
 						if (Arrays.equals(((CSTState)chkpntState).getLogLowerHash(), lowerLogHash)) {
 							validState = true;
-							logger.warn("Lower log matches checkpoint");
+							logger.debug("VALID Lower Log hash");
 						} else {
-							logger.warn("Lower log does not match checkpoint");
+							logger.debug("INVALID Lower Log hash");
 						}
 						// validate upper log
 
 						if (!Arrays.equals(((CSTState)chkpntState).getLogUpperHash(), upperLogHash) ) {
 							validState = false;
-							logger.error("Upper log does not match checkpoint");
+							logger.debug("INVALID Upper Log hash");
 						} else {
-							logger.warn("Upper log matches checkpoint");
+							logger.debug("VALID Upper Log hash");
 						}
 						stateTransferEndTime = System.currentTimeMillis();
-						System.out.println("State Transfer process BEFORE statePlusLower!");
-						System.out.println("State Transfer duration: " + (stateTransferEndTime - stateTransferStartTime));
+						System.out.println("State Transfer process BEFORE statePlusLower/REBUILD!");
+						System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 
 						CSTState statePlusLower = new CSTState(((CSTState)chkpntState).getSerializedState(),
 								TOMUtil.computeHash(((CSTState)chkpntState).getSerializedState()),
 								stateLower.get().getLogLower(), ((CSTState)chkpntState).getLogLowerHash(), null, null,
 								((CSTState)chkpntState).getCheckpointCID(), stateUpper.get().getCheckpointCID(), SVController.getStaticConf().getProcessId());
 
+						stateTransferEndTime = System.currentTimeMillis();
+						System.out.println("State Transfer process AFTER statePlusLower/REBUILD!");
+						System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
+
 						if (validState) { // validate checkpoint
+							logger.debug("Intalling Checkpoint and replying Lower Log");
+							logger.debug("Installing state plus lower \n" + statePlusLower);
+							
 							stateTransferEndTime = System.currentTimeMillis();
 							System.out.println("State Transfer process BEFORE setState!");
-							System.out.println("State Transfer duration: " + (stateTransferEndTime - stateTransferStartTime));
+							System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 
 							dt.getRecoverer().setState(statePlusLower);
 
-							stateTransferEndTime = System.currentTimeMillis();
-							System.out.println("State Transfer process BEFORE setState!");
-							System.out.println("State Transfer duration: " + (stateTransferEndTime - stateTransferStartTime));
+							stateTransferEndTime = System.currentTimeMillis();								
+							System.out.println("State Transfer process AFTER SET STATE!");
+							System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 							
 							byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
 							if (!Arrays.equals(currentStateHash, stateUpper.get().getCheckpointHash())) {
@@ -423,7 +430,7 @@ public class DurableStateManager extends StateManager {
 						}
 						stateTransferEndTime = System.currentTimeMillis();
 						System.out.println("State Transfer process completed successfuly!");
-						System.out.println("State Transfer duration: " + (stateTransferEndTime - stateTransferStartTime));
+						System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 
 					} else if (chkpntState == null && (SVController.getCurrentViewN() / 2) < getReplies()) {
 						logger.warn("---- DIDNT RECEIVE STATE ----");
