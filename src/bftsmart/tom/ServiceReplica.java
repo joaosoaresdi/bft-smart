@@ -29,6 +29,7 @@ import bftsmart.consensus.roles.Proposer;
 import bftsmart.reconfiguration.ReconfigureReply;
 import bftsmart.reconfiguration.ServerViewController;
 import bftsmart.reconfiguration.VMMessage;
+import bftsmart.reconfiguration.util.TOMConfiguration;
 import bftsmart.tom.core.ReplyManager;
 import bftsmart.tom.core.TOMLayer;
 import bftsmart.tom.core.messages.TOMMessage;
@@ -193,7 +194,7 @@ public class ServiceReplica {
     Thread[] receivers;
     private void initReplica() {
     	int receiversCount = 1;
-    	if(SVController.getStaticConf().multithreadedComms()) {
+    	if(TOMConfiguration.staticLoad().multithreadedComms()) {
     		receiversCount = 3;
     	}
     	
