@@ -281,23 +281,24 @@ public class DurableStateLog extends StateLog {
     			System.arraycopy(ckpState, commonShards[0]*shardSize, data, 0 , shardSize);
     			System.arraycopy(ckpState, commonShards[1]*shardSize, data, shardSize, (comm_count-1)*shardSize);
 
+				int length = shardSize;
         		for(int i = 0;i < noncommonShards.length; i++) {
-//        			try {
-        				int length = shardSize;
+        			try {
         				if(ckpState.length < ((comm_count+i+1)*shardSize))
         					length = ckpState.length - (comm_count+i)*shardSize;
         				System.arraycopy(ckpState, noncommonShards[i]*shardSize, data, (comm_count+i)*shardSize, length);
-//        			} catch (Exception e) {
-//        				e.printStackTrace();
-//        				
-//        				System.out.println(i);
-//        				System.out.println(ckpState.length);
-//        				System.out.println(noncommonShards[i]);
-//        				System.out.println(noncommonShards[i]*shardSize);
-//        				System.out.println(data.length);
-//        				System.out.println((comm_count+i));
-//        				System.out.println((comm_count+i)*shardSize);
-//        			}
+        			} catch (Exception e) {
+        				e.printStackTrace();
+        				
+        				System.out.println(i);
+        				System.out.println(ckpState.length);
+        				System.out.println(noncommonShards[i]);
+        				System.out.println(noncommonShards[i]*shardSize);
+        				System.out.println(data.length);
+        				System.out.println((comm_count+i));
+        				System.out.println((comm_count+i)*shardSize);
+        				System.out.println(length);
+        			}
         		}
         	}
         	else {
