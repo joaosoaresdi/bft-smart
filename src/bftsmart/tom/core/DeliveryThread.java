@@ -196,7 +196,7 @@ public final class DeliveryThread extends Thread {
                 
                 	// modified by JSoares
                 while(decided.isEmpty())
-                	notEmptyQueue.await(50, TimeUnit.MILLISECONDS);
+                	notEmptyQueue.await(250, TimeUnit.MILLISECONDS);
                 
 //                if(decided.isEmpty()) {
 //                    notEmptyQueue.await();
