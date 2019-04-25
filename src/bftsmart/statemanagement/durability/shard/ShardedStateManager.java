@@ -449,7 +449,8 @@ public class ShardedStateManager extends DurableStateManager {
     		
     		//when sorted shards
     		//common chkpnt
-			System.arraycopy(chkpntSer, 0, rebuiltData, commonShards[0]*shardSize, comm_count*shardSize);
+			System.arraycopy(chkpntSer, 0, rebuiltData, commonShards[0]*shardSize, shardSize);
+			System.arraycopy(chkpntSer, shardSize, rebuiltData, commonShards[1]*shardSize, (comm_count-1)*shardSize);
     		//common lowerlog
 			System.arraycopy(logLowerSer, 0, rebuiltData, commonShards[comm_count]*shardSize, (third)*shardSize);
     		//common upperlog

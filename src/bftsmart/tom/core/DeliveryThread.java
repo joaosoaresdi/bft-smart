@@ -227,12 +227,17 @@ public final class DeliveryThread extends Thread {
                                 d.getConsensusId(), d.getValue(), d.getDecisionEpoch().proof);
                         cDecs[count] = cDec;
 
-                        System.out.println(d);
-                        System.out.println(d.firstMessageProposed);
-                        System.out.println(requests[count].length);
-                        for(int i = 0 ;i < requests[count].length; i++)
-                        	System.out.println(requests[count][i]);
-
+                        //modified by JSoares due to null pointer
+                        {
+		                    System.out.println(d);
+		                    System.out.println(d.firstMessageProposed);
+		                    System.out.println(requests[count].length);
+		                    for(int i = 0 ;i < requests[count].length; i++)
+		                    	System.out.println(requests[count][i]);
+		                    
+		                    if(d.firstMessageProposed == null)
+		                    	d.firstMessageProposed = new TOMMessage(); // to avoid null pointer
+                        }
                         // cons.firstMessageProposed contains the performance counters
                         if (requests[count][0].equals(d.firstMessageProposed)) {
                             long time = requests[count][0].timestamp;
