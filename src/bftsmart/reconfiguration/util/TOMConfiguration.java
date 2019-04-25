@@ -70,6 +70,7 @@ public class TOMConfiguration extends Configuration {
     private int shardSize;
     private String mrklTreeHashAlgo;
     private boolean origcst;
+    private boolean multithreadedComms;
     
     /** Creates a new instance of TOMConfiguration */
     public TOMConfiguration(int processId, KeyLoader loader) {
@@ -377,6 +378,13 @@ public class TOMConfiguration extends Configuration {
 		    	origcst = false;
 		    }
 
+            s = (String) configs.remove("system.communication.multithreaded");
+		    if (s != null) {
+		    	multithreadedComms = Boolean.parseBoolean(s);
+		    } else {
+		    	multithreadedComms = false;
+		    }
+
             	
         } catch (Exception e) {
             logger.error("Could not parse system configuration file",e);
@@ -562,11 +570,7 @@ public class TOMConfiguration extends Configuration {
 
 	public String getMrklTreeHashAlgo() {
 		return mrklTreeHashAlgo;
-}
-
-	public boolean useOrigCST() {
-		return origcst;
-}
+	}
 
 	public MessageDigest getMrklTreeMessageDigest() {
 		try {
@@ -577,6 +581,14 @@ public class TOMConfiguration extends Configuration {
 		return null;
 	}
 	
+	public boolean useOrigCST() {
+		return origcst;
+	}
+
+	public boolean multithreadedComms() {
+		return multithreadedComms;
+	}
+
     public static TOMConfiguration staticLoad() {
     	return new TOMConfiguration(-1, null);
     }

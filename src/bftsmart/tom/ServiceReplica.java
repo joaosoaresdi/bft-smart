@@ -192,7 +192,11 @@ public class ServiceReplica {
     //Modified by JSoares
     Thread[] receivers;
     private void initReplica() {
-    	int receiversCount = 3;
+    	int receiversCount = 1;
+    	if(SVController.getStaticConf().multithreadedComms()) {
+    		receiversCount = 3;
+    	}
+    	
     	receivers = new Thread[receiversCount];
     	
     	for(int i =0 ;i < receivers.length; i++)

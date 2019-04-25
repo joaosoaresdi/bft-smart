@@ -107,7 +107,7 @@ public class FileRecoverer {
 
         return null;
     }
-/*
+
     // modified by JSoares
     // TODO: [JSoares] - modify this to only read the required bytes from the file, instead of the entire checkpoint
     public byte[] getCkpState(String ckpPath, Integer[] shards, int shardSize) {
@@ -117,33 +117,19 @@ public class FileRecoverer {
         if ((ckp = openLogFile(ckpPath)) != null) {
         	
             byte[] ckpState = recoverCkpState(ckp);
-//            try {
-//	            FileOutputStream fos = new FileOutputStream(ckpPath+"state");
-//	            fos.write(ckpState);
-//	            fos.flush();
-//	            fos.close();
-//            } catch (Exception e) {
-//            	e.printStackTrace();
-//            }
-            		
-//            logger.debug(" CHECKPOINT : " + Arrays.toString(ckpState));
-            
             for(int i = 0;i < shards.length; i++) {
             	int orig_offset = shards[i]*shardSize;
             	int dest_offset = i*shardSize;
             	int length = (orig_offset + shardSize) > ckpState.length ? (ckpState.length-orig_offset) : shardSize;
             	if(length != shardSize) {
             		byte[] tmp = new byte[shardSize];
-//            		System.out.println("################# length != shardSize #################");
             		System.arraycopy(ckpState, orig_offset, tmp, 0, length);
                     System.arraycopy(tmp, 0, toReturn, dest_offset, shardSize);
             	}
             	else {
-//                logger.debug("Reading State : state shard [{}] to CST shard [{}]", shards[i], i);                            	
             		System.arraycopy(ckpState, orig_offset, toReturn, dest_offset, length);
             	}
             }
-//            logger.debug(" TO SEND : " + Arrays.toString(toReturn));
             try {
                 ckp.close();
             } catch (IOException e) {
@@ -153,7 +139,7 @@ public class FileRecoverer {
         }
         return null;
     }
-*/
+
     public byte[] getCkpState(String ckpPath) {
         RandomAccessFile ckp = null;
 
