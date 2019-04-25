@@ -17,7 +17,7 @@ package bftsmart.tom.core;
 
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
-
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -193,9 +193,14 @@ public final class DeliveryThread extends Thread {
             try {
                 ArrayList<Decision> decisions = new ArrayList<Decision>();
                 decidedLock.lock();
-                if(decided.isEmpty()) {
-                    notEmptyQueue.await();
-                }
+                
+                	// modified by JSoares
+                while(decided.isEmpty())
+                	notEmptyQueue.await(50, TimeUnit.MILLISECONDS);
+                
+//                if(decided.isEmpty()) {
+//                    notEmptyQueue.await();
+//                }
                 
                 logger.debug("Current size of the decided queue: {}", decided.size());
 
