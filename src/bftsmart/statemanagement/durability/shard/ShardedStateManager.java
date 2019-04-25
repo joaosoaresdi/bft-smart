@@ -867,6 +867,7 @@ public class ShardedStateManager extends DurableStateManager {
 								tomLayer.getSynchronizer().resumeLC();
 							}
 							
+							System.exit(1);
 							
 						} else if (chkpntState == null
 								&& (SVController.getCurrentViewN() / 2) < getReplies()) {
