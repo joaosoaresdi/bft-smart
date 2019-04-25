@@ -227,6 +227,12 @@ public final class DeliveryThread extends Thread {
                                 d.getConsensusId(), d.getValue(), d.getDecisionEpoch().proof);
                         cDecs[count] = cDec;
 
+                        System.out.println(d);
+                        System.out.println(d.firstMessageProposed);
+                        System.out.println(requests[count].length);
+                        for(int i = 0 ;i < requests[count].length; i++)
+                        	System.out.println(requests[count][i]);
+
                         // cons.firstMessageProposed contains the performance counters
                         if (requests[count][0].equals(d.firstMessageProposed)) {
                             long time = requests[count][0].timestamp;

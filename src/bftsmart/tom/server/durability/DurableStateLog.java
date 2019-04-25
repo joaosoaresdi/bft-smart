@@ -519,9 +519,6 @@ public class DurableStateLog extends StateLog {
         
         CommandsInfo[] commands = fr.getLogState(0, 0, request.getLogUpperSize(), logBeforeGlobalPath);
         ShardedCSTState cstState;
-        
-        byte[] logBytes = TOMUtil.getBytes(commands);
-        System.out.println(commands.length + " Log bytes size: " + logBytes.length);
         if(id == request.getLogUpper()) {
             cstState = new ShardedCSTState(null, null, null, null, commands, null, -1, cid, this.id, request.getHashAlgo(), request.getShardSize(), false);
         }
