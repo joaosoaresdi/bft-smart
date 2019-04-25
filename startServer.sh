@@ -15,7 +15,10 @@
 #/bin/bash
 
 REPLICA_INDEX=$1
-
-git pull origin master;
-./cleanUp.sh;
-./startReplicaYCSB.sh $REPLICA_INDEX
+RUNS=$2
+while [ $RUNS -gt 0 ]
+do
+	./cleanUp.sh;
+	./startReplicaYCSB.sh $REPLICA_INDEX > ((RUNS)).out
+	((RUNS--))
+done
