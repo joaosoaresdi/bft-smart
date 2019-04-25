@@ -343,7 +343,7 @@ public class DurableStateLog extends StateLog {
             byte[] data;
         	if(nonCommon_size < third) {
         		int start = (comm_count + third);
-        		int size = nonCommon_size-start;
+        		int size = common_size-start;
                 data = new byte[size*shardSize];
     			System.arraycopy(ckpState, commonShards[start]*shardSize, data, 0 ,size*shardSize);
         	}
