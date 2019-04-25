@@ -16,9 +16,12 @@
 
 REPLICA_INDEX=$1
 RUNS=$2
-while [ $RUNS -gt 0 ]
-do
+X=0
+while [ $X -lt $RUNS ]
+do	
+	echo "Starting run".$X." ..."
 	./cleanUp.sh;
 	./startReplicaYCSB.sh $REPLICA_INDEX > "run".$RUNS.".out"
-	((RUNS--))
+	echo "Ended run".$X."!"
+	((X++))
 done

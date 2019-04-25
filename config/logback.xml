@@ -3,6 +3,7 @@
 	<!-- Logging to console -->
 	<appender name="STDERR"
 		class="ch.qos.logback.core.ConsoleAppender">
+		<target>System.err</target>
 		<encoder>
 			<pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger{56}.%M - %msg%n
 			</pattern>
@@ -11,6 +12,7 @@
 
 	<appender name="STDOUT-TRACE"
 		class="ch.qos.logback.core.ConsoleAppender">
+		<target>System.err</target>
 		<encoder>
 			<!-- <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} 
 				- %msg%n</pattern> -->
@@ -22,6 +24,7 @@
 	<!-- Logging to console wih minimal output -->
 	<appender name="STDOUT-INFO"
 		class="ch.qos.logback.core.ConsoleAppender">
+		<target>System.err</target>
 		<encoder>
 			<pattern> \t\t %level [%thread] %C.%M - %msg%n </pattern>
 		</encoder>
