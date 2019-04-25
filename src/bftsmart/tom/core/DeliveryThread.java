@@ -193,23 +193,16 @@ public final class DeliveryThread extends Thread {
             try {
                 ArrayList<Decision> decisions = new ArrayList<Decision>();
                 decidedLock.lock();
-                
-                	// modified by JSoares
-                while(decided.isEmpty())
-                	notEmptyQueue.await(250, TimeUnit.MILLISECONDS);
-                
-//                if(decided.isEmpty()) {
-//                    notEmptyQueue.await();
-//                }
-                
-                logger.debug("Current size of the decided queue: {}", decided.size());
-
-                if (controller.getStaticConf().getSameBatchSize()) {
-                    decided.drainTo(decisions, 1);
-                } else {
-                    decided.drainTo(decisions);
-                }
-                
+	                if(decided.isEmpty()) {
+	                    notEmptyQueue.await();
+	                }
+	                logger.debug("Current size of the decided queue: {}", decided.size());
+	
+	                if (controller.getStaticConf().getSameBatchSize()) {
+	                    decided.drainTo(decisions, 1);
+	                } else {
+	                    decided.drainTo(decisions);
+	                }
                 decidedLock.unlock();
                 
                 if (!doWork) break;

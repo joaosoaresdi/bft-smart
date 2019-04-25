@@ -303,9 +303,14 @@ public class DurableStateManager extends StateManager {
 							
 							byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
 							if (!Arrays.equals(currentStateHash, stateUpper.get().getCheckpointHash())) {
-								logger.warn("checkpoint hash don't match");
+								logger.debug("INVALID Checkpoint + Lower Log hash"); 
 								validState = false;
+							} else {
+								logger.debug("VALID Checkpoint + Lower Log  hash");
 							}
+						}
+						else {
+							logger.debug("Terminating transfer process due to faulty Lower and Upper Logs");
 						}
 					}
 
