@@ -51,7 +51,7 @@ public class StateSenderServer implements Runnable {
 				Socket socket = server.accept();
 				logger.debug("Received connection for state transfer");
 				ApplicationState state = coordinator.getState(request);
-				StateSender sender = new StateSender(socket, state);
+				StateSenderRunnable sender = new StateSenderRunnable(socket, state);
 				new Thread(sender).start();
 			} catch (Exception e) {
 				e.printStackTrace();

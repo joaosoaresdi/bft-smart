@@ -25,14 +25,14 @@ import bftsmart.statemanagement.ApplicationState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StateSender implements Runnable {
+public class StateSenderRunnable implements Runnable {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
     
 	private Socket socket;
 	private ApplicationState state;
 	
-	public StateSender(Socket socket, ApplicationState state) {
+	public StateSenderRunnable(Socket socket, ApplicationState state) {
 		this.socket = socket;
 		this.state = state;
 	}
@@ -48,7 +48,7 @@ public class StateSender implements Runnable {
 			os.flush();
 			oos.close();
 			os.close();
-			logger.debug("Replica state transfer successful (socket: {})", socket);
+			logger.debug("Replica state transfer successful (bytes: {}, socket: {})", state.getSerializedState().length, socket);
 		} catch (IOException e) {
 			e.printStackTrace();
 			logger.error("Error during state transfer",e);
