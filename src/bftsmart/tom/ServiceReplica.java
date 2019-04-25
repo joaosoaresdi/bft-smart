@@ -196,9 +196,12 @@ public class ServiceReplica {
     	int receiversCount = 1;
     	if(TOMConfiguration.staticLoad().multithreadedComms()) {
     		receiversCount = 3;
-    		
     	}
-    	
+    	System.out.println("STARTING " + receiversCount + " receivers");
+    	System.out.println("STARTING " + receiversCount + " receivers");
+    	System.out.println("STARTING " + receiversCount + " receivers");
+    	System.out.println("STARTING " + receiversCount + " receivers");
+    	System.out.println("STARTING " + receiversCount + " receivers");
     	receivers = new Thread[receiversCount];
     	
     	for(int i =0 ;i < receivers.length; i++)
