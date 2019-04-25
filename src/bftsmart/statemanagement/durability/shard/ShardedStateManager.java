@@ -616,11 +616,6 @@ public class ShardedStateManager extends DurableStateManager {
 			logger.debug("Received a CSTMessage from {} ", reply.getSender());
 
 			if (waitingCID != -1 && reply.getCID() == waitingCID) {
-				int currentRegency = -1;
-				int currentLeader = -1;
-				View currentView = null;
-				CertifiedDecision currentProof = null;
-
 				receivedRegencies.put(reply.getSender(), reply.getRegency());
 				receivedLeaders.put(reply.getSender(), reply.getLeader());
 				receivedViews.put(reply.getSender(), reply.getView());
@@ -734,7 +729,10 @@ public class ShardedStateManager extends DurableStateManager {
 							}
 						}
 						
-						currentProof = upperState.getCertifiedDecision(SVController);
+						int currentRegency = tomLayer.execManager.getCurrentLeader();;
+						int currentLeader = tomLayer.getSynchronizer().getLCManager().getLastReg();
+						View currentView = SVController.getCurrentView();
+						CertifiedDecision currentProof = upperState.getCertifiedDecision(SVController);
 						
 						if (!appStateOnly) {
 							if (enoughRegencies(reply.getRegency())) {
@@ -749,10 +747,6 @@ public class ShardedStateManager extends DurableStateManager {
 								logger.warn("Not a member!");
 								}
 							}
-						} else {
-							currentLeader = tomLayer.execManager.getCurrentLeader();
-							currentRegency = tomLayer.getSynchronizer().getLCManager().getLastReg();
-							currentView = SVController.getCurrentView();
 						}
 								
 						logger.info("CURRENT Regency = " + currentRegency);

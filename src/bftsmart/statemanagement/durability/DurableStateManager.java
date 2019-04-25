@@ -317,12 +317,12 @@ public class DurableStateManager extends StateManager {
 					logger.debug("get certifiedDecision for index " + stateUpper.get().getLastCID() + ". log upper size(): " + stateUpper.get().getLogUpper().length);
 					currentProof = stateUpper.get().getCertifiedDecision(SVController);
 
-					logger.debug("-- current regency: " + currentRegency);
-					logger.debug("-- current leader: " + currentLeader);
-					logger.debug("-- current view: " + currentView);
-					logger.debug("-- haveState: " + validState);
-					logger.debug("-- currentProof: " + currentProof);
-					logger.debug("-- isBFT: " + isBFT);
+					logger.info("CURRENT Regency = " + currentRegency);
+					logger.info("CURRENT Leader = " + currentLeader);
+					logger.info("CURRENT View = " + currentView);
+					logger.info("CURRENT PROOF = " + currentProof);
+					logger.info("validState = " + validState);
+					logger.info("appStateOnly = " + appStateOnly);
 
 					if ( /*currentRegency > -1 &&*/ currentLeader > -1
 							&& currentView != null && validState && (!isBFT || currentProof != null || appStateOnly)) {
