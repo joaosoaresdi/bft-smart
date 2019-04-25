@@ -286,11 +286,10 @@ public class DurableStateLog extends StateLog {
         			System.out.println(noncommonShards[i]);
         			try {
         				if(ckpState.length < ((noncommonShards[i]+1)*shardSize))
-        					length = ckpState.length - ((noncommonShards[i]+1)*shardSize);
+        					length = ckpState.length - ((noncommonShards[i])*shardSize);
         				System.arraycopy(ckpState, noncommonShards[i]*shardSize, data, (comm_count+i)*shardSize, length);
         			} catch (Exception e) {
         				e.printStackTrace();
-        				
         				System.out.println(i);
         				System.out.println(ckpState.length);
         				System.out.println(noncommonShards[i]);
