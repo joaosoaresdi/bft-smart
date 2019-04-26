@@ -460,7 +460,11 @@ public class ShardedStateManager extends DurableStateManager {
     		//common lowerlog
 			System.arraycopy(logLowerSer, 0, rebuiltData, commonShards[comm_count]*shardSize, (third)*shardSize);
     		//common upperlog
-			System.arraycopy(logUpperSer, 0, rebuiltData, commonShards[comm_count+third]*shardSize, logUpperSer.length);
+			try {
+				System.arraycopy(logUpperSer, 0, rebuiltData, commonShards[comm_count+third]*shardSize, logUpperSer.length);
+			} catch (Exception e) {
+				
+			}
 			//non common
     		for(int i = 0;i < noncommonShards.length; i++) {
     			try {
