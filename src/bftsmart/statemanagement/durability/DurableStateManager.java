@@ -436,6 +436,8 @@ public class DurableStateManager extends StateManager {
 							tomLayer.getSynchronizer().resumeLC();
 						}
 						
+						System.exit(1);
+						
 
 					} else if (chkpntState == null && (SVController.getCurrentViewN() / 2) < getReplies()) {
 						logger.warn("---- DIDNT RECEIVE STATE ----");
