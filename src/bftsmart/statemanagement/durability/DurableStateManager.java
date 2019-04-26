@@ -83,7 +83,7 @@ public class DurableStateManager extends StateManager {
 		CSTRequestF1 cst = new CSTRequestF1(waitingCID);
 		cst.defineReplicas(otherProcesses, globalCkpPeriod, me);
 		this.cstConfig = cst;
-		
+		System.out.println("Requestiong chekpnt : " + cst.getCheckpointReplica());
 		//start timer
 		stateTransferStartTime = System.currentTimeMillis();
 

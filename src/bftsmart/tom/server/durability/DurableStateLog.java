@@ -393,16 +393,18 @@ public class DurableStateLog extends StateLog {
                 
                 if(this.id == 1)
                     cstState = new CSTState(new byte[ckpState.clone().length], null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id);
+                System.out.println("--- sending chkpnt: " + id);
                 
                 return cstState;                
             } else if(id == requestF1.getLogLower()) {
                 // This replica is expected to send the lower part of the log
+                System.out.println("--- sending lower log: " + id);
                 CommandsInfo[] logLower = fr.getLogState(logPointers.get(requestF1.getCheckpointReplica()), 0, requestF1.getLogLowerSize(), logPath);
                 CSTState cstState = new CSTState(null, null, logLower, null, null, null, lastCheckpointCID, lastCID, this.id);
                 return cstState;
             } else {
                 // This replica is expected to send the upper part of the log plus the hash for its checkpoint
-                System.out.println("--- sending upper log: " + requestF1.getLogUpperSize());
+                System.out.println("--- sending upper log: " + id);
                 checkpointLock.lock();
                 fr.recoverCkpHash(lastCkpPath);
                 byte[] ckpHash = fr.getCkpStateHash();
