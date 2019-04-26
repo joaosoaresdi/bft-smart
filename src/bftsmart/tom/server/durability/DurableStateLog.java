@@ -392,7 +392,7 @@ public class DurableStateLog extends StateLog {
                 CSTState cstState = new CSTState(ckpState, null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id);
                 
                 if(this.id == 0)
-                    cstState = new CSTState(null, null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id);
+                    cstState = new CSTState(new byte[ckpState.clone().length], null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id);
                 
                 return cstState;                
             } else if(id == requestF1.getLogLower()) {
