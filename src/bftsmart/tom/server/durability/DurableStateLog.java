@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
+import bftsmart.reconfiguration.util.TOMConfiguration;
 import bftsmart.statemanagement.durability.CSTRequest;
 import bftsmart.statemanagement.durability.CSTRequestF1;
 import bftsmart.statemanagement.durability.CSTState;
@@ -361,8 +362,14 @@ public class DurableStateLog extends StateLog {
 
             int lastCIDInState = lastCheckpointCID + cstRequest.getLogUpperSize();
 //            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
-            ShardedCSTState cstState = new ShardedCSTState(null, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
-            return cstState;
+            if(TOMConfiguration.staticLoad().simulateFault()) {
+	            ShardedCSTState cstState = new ShardedCSTState(null, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+	            return cstState;
+            }
+            else  {
+	            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+	            return cstState;
+            }
         }
     }
 
@@ -393,12 +400,14 @@ public class DurableStateLog extends StateLog {
                 byte[] logUpperHash = CommandsInfo.computeHash(logUpper);
                 CSTState cstState = new CSTState(ckpState, null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id);
                 
-                if(sendFaultyState) {
-                    cstState = new CSTState(new byte[ckpState.clone().length], null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id);
-                    sendFaultyState = false;
-                }
-                else {
-                	sendFaultyState = true;
+                if(TOMConfiguration.staticLoad().simulateFault()) {
+	                if(sendFaultyState) {
+	                    cstState = new CSTState(new byte[ckpState.clone().length], null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id);
+	                    sendFaultyState = false;
+	                }
+	                else {
+	                	sendFaultyState = true;
+	                }
                 }
                 System.out.println("--- sending chkpnt: " + id);
                 

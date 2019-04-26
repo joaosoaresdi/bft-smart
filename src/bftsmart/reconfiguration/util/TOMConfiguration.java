@@ -71,6 +71,7 @@ public class TOMConfiguration extends Configuration {
     private String mrklTreeHashAlgo;
     private boolean origcst;
     private boolean multithreadedComms;
+    private boolean simulateFault;
     
     /** Creates a new instance of TOMConfiguration */
     public TOMConfiguration(int processId, KeyLoader loader) {
@@ -385,6 +386,13 @@ public class TOMConfiguration extends Configuration {
 		    	multithreadedComms = false;
 		    }
 
+            s = (String) configs.remove("system.state.simulatefault");
+		    if (s != null) {
+		    	simulateFault = Boolean.parseBoolean(s);
+		    } else {
+		    	simulateFault = false;
+		    }
+
             	
         } catch (Exception e) {
             logger.error("Could not parse system configuration file",e);
@@ -587,6 +595,10 @@ public class TOMConfiguration extends Configuration {
 
 	public boolean multithreadedComms() {
 		return multithreadedComms;
+	}
+
+	public boolean simulateFault() {
+		return simulateFault;
 	}
 
     public static TOMConfiguration staticLoad() {

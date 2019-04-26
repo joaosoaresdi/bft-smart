@@ -34,6 +34,7 @@ import bftsmart.consensus.Consensus;
 import bftsmart.consensus.Epoch;
 import bftsmart.consensus.messages.ConsensusMessage;
 import bftsmart.consensus.messages.MessageFactory;
+import bftsmart.reconfiguration.util.TOMConfiguration;
 import bftsmart.reconfiguration.views.View;
 import bftsmart.statemanagement.ApplicationState;
 import bftsmart.statemanagement.SMMessage;
@@ -86,9 +87,11 @@ public class DurableStateManager extends StateManager {
 		this.cstConfig = cst;
 		System.out.println("Requestiong chekpnt : " + cst.getCheckpointReplica());
 		//start timer
-		if(firstRequest) {
-			stateTransferStartTime = System.currentTimeMillis();
-			firstRequest = false;
+		if(TOMConfiguration.staticLoad().simulateFault()) {
+			if(firstRequest) {
+				stateTransferStartTime = System.currentTimeMillis();
+				firstRequest = false;
+			}
 		}
 
 		CSTSMMessage cstMsg = new CSTSMMessage(me, waitingCID,
@@ -425,7 +428,9 @@ public class DurableStateManager extends StateManager {
 						stateTransferEndTime = System.currentTimeMillis();
 						System.out.println("State Transfer process completed successfuly!");
 						System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
-						firstRequest = true;
+						
+						if(TOMConfiguration.staticLoad().simulateFault())
+							firstRequest = true;
 
 						reset();
 
