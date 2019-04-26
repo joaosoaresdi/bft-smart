@@ -347,7 +347,7 @@ public class ShardedStateManager extends DurableStateManager {
 //					e.printStackTrace();
 				}
 				if(!Arrays.equals(md.digest(shard), nodes.get(count).digest())) {
-					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
+//					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
 					faultyPages.add(shards[i]);
 				}
     		}
@@ -367,7 +367,7 @@ public class ShardedStateManager extends DurableStateManager {
 //					e.printStackTrace();
 				}
 				if(!Arrays.equals(md.digest(shard), nodes.get(shards[i]).digest())) {
-					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
+//					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
 					faultyPages.add(shards[i]);
 				}
 			}
@@ -387,7 +387,7 @@ public class ShardedStateManager extends DurableStateManager {
 //					e.printStackTrace();
 				}
 				if(!Arrays.equals(md.digest(shard), nodes.get(i).digest())) {
-					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
+//					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
 					faultyPages.add(shards[i]);
 				}
 			}
@@ -406,7 +406,7 @@ public class ShardedStateManager extends DurableStateManager {
 					e.printStackTrace();
 				}
 				if(!Arrays.equals(md.digest(shard), nodes.get(half+i).digest())) {
-					logger.info("Faulty shard detected {} from Replica {}", shards[half+i], state.getReplicaID());
+//					logger.info("Faulty shard detected {} from Replica {}", shards[half+i], state.getReplicaID());
 					faultyPages.add(shards[half+i]);
 				}
 			}

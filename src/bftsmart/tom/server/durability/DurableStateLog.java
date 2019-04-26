@@ -390,6 +390,10 @@ public class DurableStateLog extends StateLog {
                 byte[] logLowerHash = CommandsInfo.computeHash(logLower);
                 byte[] logUpperHash = CommandsInfo.computeHash(logUpper);
                 CSTState cstState = new CSTState(ckpState, null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id);
+                
+                if(this.id == 0)
+                    cstState = new CSTState(null, null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id);
+                
                 return cstState;                
             } else if(id == requestF1.getLogLower()) {
                 // This replica is expected to send the lower part of the log
