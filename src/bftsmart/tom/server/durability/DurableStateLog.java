@@ -360,8 +360,8 @@ public class DurableStateLog extends StateLog {
             CommandsInfo[] logUpper = fr.getLogState(cstRequest.getLogUpperSize(), logPath);
 
             int lastCIDInState = lastCheckpointCID + cstRequest.getLogUpperSize();
-            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
-//            ShardedCSTState cstState = new ShardedCSTState(null, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+//            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+            ShardedCSTState cstState = new ShardedCSTState(null, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
             return cstState;
         }
     }
