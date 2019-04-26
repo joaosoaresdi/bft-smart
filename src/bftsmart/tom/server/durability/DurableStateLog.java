@@ -366,6 +366,7 @@ public class DurableStateLog extends StateLog {
         }
     }
 
+    // modified by JSoares to simulate fault
     boolean sendFaultyState = true;
 
     private CSTState getOriginalState(CSTRequest cstRequest) {

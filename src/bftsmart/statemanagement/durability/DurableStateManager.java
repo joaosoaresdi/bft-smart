@@ -67,6 +67,7 @@ public class DurableStateManager extends StateManager {
 
 	long stateTransferStartTime;
 	long stateTransferEndTime;
+	boolean firstRequest = true;
 	@Override
 	protected void requestState() {
 		logger.trace("");
@@ -85,7 +86,10 @@ public class DurableStateManager extends StateManager {
 		this.cstConfig = cst;
 		System.out.println("Requestiong chekpnt : " + cst.getCheckpointReplica());
 		//start timer
-		stateTransferStartTime = System.currentTimeMillis();
+		if(firstRequest) {
+			stateTransferStartTime = System.currentTimeMillis();
+			firstRequest = false;
+		}
 
 		CSTSMMessage cstMsg = new CSTSMMessage(me, waitingCID,
 				TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
@@ -421,6 +425,7 @@ public class DurableStateManager extends StateManager {
 						stateTransferEndTime = System.currentTimeMillis();
 						System.out.println("State Transfer process completed successfuly!");
 						System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
+						firstRequest = true;
 
 						reset();
 
