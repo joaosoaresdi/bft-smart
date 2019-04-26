@@ -366,6 +366,7 @@ public class DurableStateLog extends StateLog {
         }
     }
 
+    boolean sendFaultyState = true;
 
     private CSTState getOriginalState(CSTRequest cstRequest) {
         
@@ -391,8 +392,13 @@ public class DurableStateLog extends StateLog {
                 byte[] logUpperHash = CommandsInfo.computeHash(logUpper);
                 CSTState cstState = new CSTState(ckpState, null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id);
                 
-                if(this.id == 1)
+                if(sendFaultyState) {
                     cstState = new CSTState(new byte[ckpState.clone().length], null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id);
+                    sendFaultyState = false;
+                }
+                else {
+                	sendFaultyState = true;
+                }
                 System.out.println("--- sending chkpnt: " + id);
                 
                 return cstState;                
