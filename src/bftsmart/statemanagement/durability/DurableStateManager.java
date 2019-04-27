@@ -387,9 +387,17 @@ public class DurableStateManager extends StateManager {
 							tomLayer.getSynchronizer().removeSTOPretransmissions(currentRegency - 1);
 						}
 
+						stateTransferEndTime = System.currentTimeMillis();
+						System.out.println("State Transfer process before deliver lock acquire!");
+						System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
+						
 						logger.debug("Trying to acquire deliverlock");
 						dt.deliverLock();
 						logger.debug("Successfuly acquired deliverlock");
+						
+						stateTransferEndTime = System.currentTimeMillis();
+						System.out.println("State Transfer process after deliver lock acquire!");
+						System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 
 						// this makes the isRetrievingState() evaluates to false
 						waitingCID = -1;
