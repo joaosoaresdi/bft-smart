@@ -727,6 +727,9 @@ public class ShardedStateManager extends DurableStateManager {
 								} else {
 									logger.debug("VALID Checkpoint + Lower Log  hash");
 								}
+								stateTransferEndTime = System.currentTimeMillis();								
+								System.out.println("State Transfer process AFTER VALIDATING STATE!");
+								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 							}
 							else {
 								logger.debug("Terminating transfer process due to faulty Lower and Upper Logs");
@@ -764,11 +767,19 @@ public class ShardedStateManager extends DurableStateManager {
 						if (/*currentRegency > -1 &&*/ currentLeader > -1
 								&& currentView != null && validState && (!isBFT || currentProof != null || appStateOnly)) {
 							logger.debug("---- RECEIVED VALID STATE ----");
-	
+
+							stateTransferEndTime = System.currentTimeMillis();								
+							System.out.println("State Transfer process BEFORE GET SYNCHRONIZER!");
+							System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
+
 							tomLayer.getSynchronizer().getLCManager().setLastReg(currentRegency);
 							tomLayer.getSynchronizer().getLCManager().setNextReg(currentRegency);
 							tomLayer.getSynchronizer().getLCManager().setNewLeader(currentLeader);
 	
+							stateTransferEndTime = System.currentTimeMillis();								
+							System.out.println("State Transfer process AFTER GET SYNCHRONIZER!");
+							System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
+
 							tomLayer.execManager.setNewLeader(currentLeader);
 	
 							if (currentProof != null && !appStateOnly) {
@@ -804,6 +815,11 @@ public class ShardedStateManager extends DurableStateManager {
 									logger.debug("Failed to install proof for consensus " + waitingCID);
 								}
 							}
+							
+							stateTransferEndTime = System.currentTimeMillis();								
+							System.out.println("State Transfer process AFTER PROOF!");
+							System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
+
 	
 							// I might have timed out before invoking the state transfer, so
 							// stop my re-transmission of STOP messages for all regencies up to the current one
