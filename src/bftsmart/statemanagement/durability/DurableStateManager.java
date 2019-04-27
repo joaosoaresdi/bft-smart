@@ -397,6 +397,10 @@ public class DurableStateManager extends StateManager {
 						logger.debug("Updating state with Upper Log operations");
 						dt.update(stateUpper.get());
 
+						stateTransferEndTime = System.currentTimeMillis();
+						System.out.println("State Transfer process upperLog installed!");
+						System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
+
 						// Deal with stopped messages that may come from
 						// synchronization phase
 						if (!appStateOnly && execManager.stopped()) {

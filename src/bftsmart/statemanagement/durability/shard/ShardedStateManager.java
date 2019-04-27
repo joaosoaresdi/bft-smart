@@ -824,7 +824,11 @@ public class ShardedStateManager extends DurableStateManager {
 							
 							logger.debug("Updating state with Upper Log operations");
 							dt.update(upperState);
-	
+							
+							stateTransferEndTime = System.currentTimeMillis();
+							System.out.println("State Transfer process upperLog installed!");
+							System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
+							
 							// Deal with stopped messages that may come from
 							// synchronization phase
 							if (!appStateOnly && execManager.stopped()) {
