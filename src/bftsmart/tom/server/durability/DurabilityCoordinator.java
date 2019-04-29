@@ -40,6 +40,7 @@ import bftsmart.tom.server.defaultservices.CommandsInfo;
 import bftsmart.tom.server.defaultservices.DefaultApplicationState;
 import bftsmart.tom.server.defaultservices.StateLog;
 import bftsmart.tom.util.TOMUtil;
+import merkletree.MerkleTree;
 
 /**
  * Implements the Collaborative State Transfer protocol. In this protocol,
@@ -313,12 +314,20 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 		return lastCID;
 	}
 
+		/*
 	private final byte[] computeHash(byte[] data) {
 		byte[] ret = null;
 		hashLock.lock();
 		ret = md.digest(data);
 		hashLock.unlock();
 		return ret;
+	}
+		*/
+	private final byte[] computeHash(byte[] data) {
+		hashLock.lock();
+		MerkleTree mt = MerkleTree.createTree(md, TOMConfiguration.staticLoad().getShardSize(), data);
+		hashLock.unlock();
+		return mt.getRootHash();
 	}
 
 	private void saveState(byte[] snapshot, int lastCID) {
@@ -492,12 +501,11 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 		logger.debug("--- State size: " + currentState.length + " Current state Hash: " + Arrays.toString(currentStateHash));
 		return currentStateHash;
 	}
-
 	public byte[] getCurrentShardedStateHash() {
 		byte[] currentState = getSnapshot();
-		byte[] currentStateHash = TOMUtil.computeShardedHash(currentState);
-		logger.debug("--- State size: " + currentState.length + " Current state Hash: " + Arrays.toString(currentStateHash));
-		return currentStateHash;
+		MerkleTree mt = MerkleTree.createTree(md, TOMConfiguration.staticLoad().getShardSize(), currentState);
+		logger.debug("--- State size: " + currentState.length + " Current state Hash: " + Arrays.toString(mt.getRootHash()));
+		return mt.getRootHash();
 	}
 
 	@Override

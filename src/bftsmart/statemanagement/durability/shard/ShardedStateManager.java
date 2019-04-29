@@ -625,7 +625,7 @@ public class ShardedStateManager extends DurableStateManager {
 //			}
 //		}
 //		else {
-		statePlusLower.setStateHash(TOMUtil.computeHash(statePlusLower.state));
+		statePlusLower.setStateHash(TOMUtil.computeShardedHash(statePlusLower.state));
 			return statePlusLower;
 //		}	
 	}
@@ -748,7 +748,9 @@ public class ShardedStateManager extends DurableStateManager {
 								System.out.println("State Transfer process AFTER SET STATE!");
 								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 
-								byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
+								//byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
+								
+								byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentShardedStateHash();
 								if (!Arrays.equals(currentStateHash, upperState.getCheckpointHash())) {
 									logger.debug("INVALID Checkpoint + Lower Log hash"); 
 									validState = false;
