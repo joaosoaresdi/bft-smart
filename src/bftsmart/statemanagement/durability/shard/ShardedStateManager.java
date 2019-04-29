@@ -434,16 +434,12 @@ public class ShardedStateManager extends DurableStateManager {
 //			System.arraycopy(currState, 0, rebuiltData, 0, length);
 //		}
 		
-		byte[] rebuiltData = new byte[shardedCSTConfig.getShardCount() * shardedCSTConfig.getShardSize()];
 		if(statePlusLower == null) {
-				statePlusLower =  new ShardedCSTState(rebuiltData,
-						TOMUtil.computeHash(rebuiltData),
+				statePlusLower =  new ShardedCSTState(new byte[shardedCSTConfig.getShardCount() * shardedCSTConfig.getShardSize()],
+						null,
 						logLowerState.getLogLower(), ((ShardedCSTState)chkpntState).getLogLowerHash(), null, null,
 						((ShardedCSTState)chkpntState).getCheckpointCID(), logUpperState.getCheckpointCID(), 
 						SVController.getStaticConf().getProcessId(), ((ShardedCSTState)chkpntState).getHashAlgo(), ((ShardedCSTState)chkpntState).getShardSize(), false);
-		}
-		else {
-			statePlusLower.setSerializedState(rebuiltData);
 		}
 
 		Integer[] noncommonShards = shardedCSTConfig.getNonCommonShards();
@@ -472,9 +468,8 @@ public class ShardedStateManager extends DurableStateManager {
     		waitingTasks[0] = executorService.submit(new Callable<Boolean>() {
     			@Override
     			public Boolean call() throws Exception {
-    				byte[] rebuiltData = statePlusLower.getSerializedState();
-    				System.arraycopy(chkpntSer, 0, rebuiltData, commonShards[0]*shardSize, shardSize);
-    				System.arraycopy(chkpntSer, shardSize, rebuiltData, commonShards[1]*shardSize, (comm_count-1)*shardSize);
+    				System.arraycopy(chkpntSer, 0, statePlusLower.state, commonShards[0]*shardSize, shardSize);
+    				System.arraycopy(chkpntSer, shardSize, statePlusLower.state, commonShards[1]*shardSize, (comm_count-1)*shardSize);
     				return true;
     			}
     			
@@ -484,9 +479,8 @@ public class ShardedStateManager extends DurableStateManager {
     		waitingTasks[1] = executorService.submit(new Callable<Boolean>() {
     			@Override
     			public Boolean call() throws Exception {
-    				byte[] rebuiltData = statePlusLower.getSerializedState();
     	    		//common lowerlog
-    				System.arraycopy(logLowerSer, 0, rebuiltData, commonShards[comm_count]*shardSize, (third)*shardSize);
+    				System.arraycopy(logLowerSer, 0, statePlusLower.state, commonShards[comm_count]*shardSize, (third)*shardSize);
     				return true;
     			}
     			
@@ -495,9 +489,8 @@ public class ShardedStateManager extends DurableStateManager {
     		waitingTasks[2] = executorService.submit(new Callable<Boolean>() {
     			@Override
     			public Boolean call() throws Exception {
-    				byte[] rebuiltData = statePlusLower.getSerializedState();
     	    		//common upperlog
-    				System.arraycopy(logUpperSer, 0, rebuiltData, commonShards[comm_count+third]*shardSize, logUpperSer.length);
+    				System.arraycopy(logUpperSer, 0, statePlusLower.state, commonShards[comm_count+third]*shardSize, logUpperSer.length);
     				return true;
     			}
     			
@@ -506,7 +499,7 @@ public class ShardedStateManager extends DurableStateManager {
     		//non common
     		for(int i = 0;i < noncommonShards.length; i++) {
     			try {
-    				System.arraycopy(chkpntSer, (comm_count+i)*shardSize, rebuiltData, noncommonShards[i]*shardSize, shardSize);
+    				System.arraycopy(chkpntSer, (comm_count+i)*shardSize, statePlusLower.state, noncommonShards[i]*shardSize, shardSize);
     			} catch (Exception e) {
     				e.printStackTrace();
     				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
@@ -590,9 +583,9 @@ public class ShardedStateManager extends DurableStateManager {
     		for(int i = 0;i < commonShards.length; i++) {
     			try {
     				if(i < half) {
-    					System.arraycopy(logLowerSer, i*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
+    					System.arraycopy(logLowerSer, i*shardSize, statePlusLower.state, commonShards[i]*shardSize, shardSize);
     				}else {
-    					System.arraycopy(logUpperSer, (i-half)*shardSize, rebuiltData, commonShards[i]*shardSize, shardSize);
+    					System.arraycopy(logUpperSer, (i-half)*shardSize, statePlusLower.state, commonShards[i]*shardSize, shardSize);
     				}
     			} catch (Exception e) {
     				e.printStackTrace();
@@ -602,13 +595,12 @@ public class ShardedStateManager extends DurableStateManager {
     		
     		for(int i = 0;i < noncommonShards.length; i++) {
     			try {
-    				System.arraycopy(chkpntSer, i*shardSize, rebuiltData, noncommonShards[i]*shardSize, shardSize);
+    				System.arraycopy(chkpntSer, i*shardSize, statePlusLower.state, noncommonShards[i]*shardSize, shardSize);
     			} catch (Exception e) {
     				e.printStackTrace();
     				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
     			}
     		}
-
     	}
 		
 //		int i =rebuiltData.length-1;
@@ -633,6 +625,7 @@ public class ShardedStateManager extends DurableStateManager {
 //			}
 //		}
 //		else {
+		statePlusLower.setStateHash(TOMUtil.computeHash(statePlusLower.state));
 			return statePlusLower;
 //		}	
 	}

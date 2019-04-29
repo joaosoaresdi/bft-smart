@@ -58,5 +58,9 @@ public class ShardedCSTState extends CSTState implements ApplicationState, Seria
 	public int getShardSize() {
 		return shardSize;
 	}
+	
+	public void setStateHash(byte[] hash) {
+		this.checkpointHash = hash;
+	}
 
 }

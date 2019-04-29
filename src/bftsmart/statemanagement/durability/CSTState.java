@@ -49,7 +49,7 @@ public class CSTState implements ApplicationState {
 
     protected final byte[] logUpperhHash;
     protected final byte[] logLowerHash;
-    protected final byte[] checkpointHash;
+    protected byte[] checkpointHash;
 
     protected final int checkpointCID;
     protected final int lastCID;
@@ -57,7 +57,7 @@ public class CSTState implements ApplicationState {
     protected final CommandsInfo[] logUpper;
     protected final CommandsInfo[] logLower;
 
-    protected byte[] state;
+    public byte[] state;
 
     protected final int pid;
     
