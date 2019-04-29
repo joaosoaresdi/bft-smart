@@ -13,7 +13,12 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import bftsmart.consensus.Consensus;
@@ -242,12 +247,8 @@ public class ShardedStateManager extends DurableStateManager {
 	private boolean validatePreCSTState(CSTState lowerState, CommandsInfo[] upperLog, byte[] upperLogHash) {
 		byte[] logHashFromCkpSender = ((ShardedCSTState)chkpntState).getLogUpperHash();
 		byte[] logHashFromLowerSender = lowerState.getLogUpperHash();
-		boolean haveState = false;
-		haveState = Arrays.equals(upperLogHash, logHashFromCkpSender);
-		if (haveState) {
-			haveState = Arrays.equals(upperLogHash, logHashFromLowerSender);
-		}
-		return haveState;
+
+		return (Arrays.equals(upperLogHash, logHashFromCkpSender) && Arrays.equals(upperLogHash, logHashFromLowerSender));
 	}
 
 	private Integer[] detectFaultyShards(CSTState lowerState, CSTState upperState, CSTState chkpntState) {
@@ -415,10 +416,14 @@ public class ShardedStateManager extends DurableStateManager {
 		return faultyPages.toArray(new Integer[0]);
 	}
 
+	
+	//this can be paralellized easily since there are no races
+	ExecutorService executorService = Executors.newCachedThreadPool();
+	Future<Boolean>[] waitingTasks = new Future[3];
+	
 	private ShardedCSTState rebuildCSTState(CSTState logLowerState, CSTState logUpperState, CSTState chkPntState) {
 		logger.debug("rebuilding state");
 
-		byte[] rebuiltData = new byte[shardedCSTConfig.getShardCount() * shardedCSTConfig.getShardSize()];
 		
 		//TODO: current state should be copied directly into chkpntData
 		// REMOVED SINCE IM NOT TREATING PREVIOUS EXISTING STATE
@@ -429,8 +434,17 @@ public class ShardedStateManager extends DurableStateManager {
 //			System.arraycopy(currState, 0, rebuiltData, 0, length);
 //		}
 		
-		if(statePlusLower != null)
-			rebuiltData = statePlusLower.getSerializedState();
+		byte[] rebuiltData = new byte[shardedCSTConfig.getShardCount() * shardedCSTConfig.getShardSize()];
+		if(statePlusLower == null) {
+				statePlusLower =  new ShardedCSTState(rebuiltData,
+						TOMUtil.computeHash(rebuiltData),
+						logLowerState.getLogLower(), ((ShardedCSTState)chkpntState).getLogLowerHash(), null, null,
+						((ShardedCSTState)chkpntState).getCheckpointCID(), logUpperState.getCheckpointCID(), 
+						SVController.getStaticConf().getProcessId(), ((ShardedCSTState)chkpntState).getHashAlgo(), ((ShardedCSTState)chkpntState).getShardSize(), false);
+		}
+		else {
+			statePlusLower.setSerializedState(rebuiltData);
+		}
 
 		Integer[] noncommonShards = shardedCSTConfig.getNonCommonShards();
 		Integer[] commonShards = shardedCSTConfig.getCommonShards();
@@ -455,17 +469,41 @@ public class ShardedStateManager extends DurableStateManager {
     		
     		//when sorted shards
     		//common chkpnt
-			System.arraycopy(chkpntSer, 0, rebuiltData, commonShards[0]*shardSize, shardSize);
-			System.arraycopy(chkpntSer, shardSize, rebuiltData, commonShards[1]*shardSize, (comm_count-1)*shardSize);
+    		waitingTasks[0] = executorService.submit(new Callable<Boolean>() {
+    			@Override
+    			public Boolean call() throws Exception {
+    				byte[] rebuiltData = statePlusLower.getSerializedState();
+    				System.arraycopy(chkpntSer, 0, rebuiltData, commonShards[0]*shardSize, shardSize);
+    				System.arraycopy(chkpntSer, shardSize, rebuiltData, commonShards[1]*shardSize, (comm_count-1)*shardSize);
+    				return true;
+    			}
+    			
+    		});
+
     		//common lowerlog
-			System.arraycopy(logLowerSer, 0, rebuiltData, commonShards[comm_count]*shardSize, (third)*shardSize);
+    		waitingTasks[1] = executorService.submit(new Callable<Boolean>() {
+    			@Override
+    			public Boolean call() throws Exception {
+    				byte[] rebuiltData = statePlusLower.getSerializedState();
+    	    		//common lowerlog
+    				System.arraycopy(logLowerSer, 0, rebuiltData, commonShards[comm_count]*shardSize, (third)*shardSize);
+    				return true;
+    			}
+    			
+    		});
     		//common upperlog
-			try {
-				System.arraycopy(logUpperSer, 0, rebuiltData, commonShards[comm_count+third]*shardSize, logUpperSer.length);
-			} catch (Exception e) {
-				
-			}
-			//non common
+    		waitingTasks[2] = executorService.submit(new Callable<Boolean>() {
+    			@Override
+    			public Boolean call() throws Exception {
+    				byte[] rebuiltData = statePlusLower.getSerializedState();
+    	    		//common upperlog
+    				System.arraycopy(logUpperSer, 0, rebuiltData, commonShards[comm_count+third]*shardSize, logUpperSer.length);
+    				return true;
+    			}
+    			
+    		});
+
+    		//non common
     		for(int i = 0;i < noncommonShards.length; i++) {
     			try {
     				System.arraycopy(chkpntSer, (comm_count+i)*shardSize, rebuiltData, noncommonShards[i]*shardSize, shardSize);
@@ -595,16 +633,7 @@ public class ShardedStateManager extends DurableStateManager {
 //			}
 //		}
 //		else {
-			if(statePlusLower == null)
-				return new ShardedCSTState(rebuiltData,
-						TOMUtil.computeHash(rebuiltData),
-						logLowerState.getLogLower(), ((ShardedCSTState)chkpntState).getLogLowerHash(), null, null,
-						((ShardedCSTState)chkpntState).getCheckpointCID(), logUpperState.getCheckpointCID(), 
-						SVController.getStaticConf().getProcessId(), ((ShardedCSTState)chkpntState).getHashAlgo(), ((ShardedCSTState)chkpntState).getShardSize(), false);
-			else {
-				statePlusLower.setSerializedState(rebuiltData);
-				return statePlusLower;
-			}
+			return statePlusLower;
 //		}	
 	}
 	
@@ -702,7 +731,13 @@ public class ShardedStateManager extends DurableStateManager {
 								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 								
 								statePlusLower = rebuildCSTState(lowerState, upperState, (CSTState)chkpntState);
-								
+								try {
+									while(!(waitingTasks[0].get()&&waitingTasks[1].get()&&waitingTasks[2].get()));
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								} catch (ExecutionException e) {
+									e.printStackTrace();
+								}
 								stateTransferEndTime = System.currentTimeMillis();
 								System.out.println("State Transfer process AFTER statePlusLower/REBUILD!");
 								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
@@ -755,15 +790,7 @@ public class ShardedStateManager extends DurableStateManager {
 								}
 							}
 						}
-								
-						logger.info("CURRENT Regency = " + currentRegency);
-						logger.info("CURRENT Leader = " + currentLeader);
-						logger.info("CURRENT View = " + currentView);
-						logger.info("CURRENT PROOF = " + currentProof);
-						logger.info("validState = " + validState);
-						logger.info("appStateOnly = " + appStateOnly);
-						
-						
+														
 						if (/*currentRegency > -1 &&*/ currentLeader > -1
 								&& currentView != null && validState && (!isBFT || currentProof != null || appStateOnly)) {
 							logger.debug("---- RECEIVED VALID STATE ----");
