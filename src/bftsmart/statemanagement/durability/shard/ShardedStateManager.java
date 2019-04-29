@@ -7,6 +7,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -14,7 +15,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -253,7 +253,7 @@ public class ShardedStateManager extends DurableStateManager {
 
 	private Integer[] detectFaultyShards(CSTState lowerState, CSTState upperState, CSTState chkpntState) {
 		logger.debug("detecting faulty shards");
-		Queue<Integer> faultyPages = new ConcurrentLinkedQueue<Integer>();
+		List<Integer> faultyPages = new LinkedList<Integer>();
 		int shardSize = this.shardedCSTConfig.getShardSize();
 		
 		Integer[] noncommonShards = shardedCSTConfig.getNonCommonShards();
