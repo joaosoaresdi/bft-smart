@@ -25,6 +25,7 @@ import bftsmart.consensus.Consensus;
 import bftsmart.consensus.Epoch;
 import bftsmart.consensus.messages.ConsensusMessage;
 import bftsmart.consensus.messages.MessageFactory;
+import bftsmart.reconfiguration.util.TOMConfiguration;
 import bftsmart.reconfiguration.views.View;
 import bftsmart.statemanagement.SMMessage;
 import bftsmart.statemanagement.durability.CSTSMMessage;
@@ -173,7 +174,6 @@ public class ShardedStateManager extends DurableStateManager {
 //			else {
 				ShardedCSTRequest cst = new ShardedCSTRequest(waitingCID, SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize());
 				cst.defineReplicas(otherReplicas, globalCkpPeriod, me);
-				System.out.println("################## ASSIGNING SHARDS ##################");
 				cst.assignShards(firstReceivedStates, dt.getRecoverer().getState(this.lastCID, true).getSerializedState());
 				
 				logger.debug("\n\t Starting State Transfer: \n" + cst);
@@ -253,7 +253,10 @@ public class ShardedStateManager extends DurableStateManager {
 
 	private Integer[] detectFaultyShards(CSTState lowerState, CSTState upperState, CSTState chkpntState) {
 		logger.debug("detecting faulty shards");
-		long t0 = System.currentTimeMillis();
+		stateTransferEndTime = System.currentTimeMillis();								
+		System.out.println("State Transfer process BEFORE DETECT FAULTY SHARDS!");
+		System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
+		
 		List<Integer> faultyPages = new LinkedList<Integer>();
 		int shardSize = this.shardedCSTConfig.getShardSize();
 		
@@ -480,8 +483,9 @@ public class ShardedStateManager extends DurableStateManager {
 
     	}
 		Integer[] ret = faultyPages.toArray(new Integer[0]);
-		System.out.println("State Transfer process DETECT FAULTS");
-		System.out.println("Time: \t" + (System.currentTimeMillis() - t0));
+		stateTransferEndTime = System.currentTimeMillis();								
+		System.out.println("State Transfer process AFTER DETECT FAULTY SHARDS!");
+		System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 		return ret;
 	}
 
@@ -818,14 +822,24 @@ public class ShardedStateManager extends DurableStateManager {
 								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 
 								//byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
-								
-								byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentShardedStateHash();
-								if (!Arrays.equals(currentStateHash, upperState.getCheckpointHash())) {
-									logger.debug("INVALID Checkpoint + Lower Log hash"); 
+								try {
+									MerkleTree mt = MerkleTree.createTree(TOMUtil.getHashEngine(), statePlusLower.getShardSize(), statePlusLower.getSerializedState());
+									if (!Arrays.equals(mt.getRootHash(), upperState.getCheckpointHash())) {
+										logger.debug("INVALID Checkpoint + Lower Log hash"); 
+										validState = false;
+									} else {
+										logger.debug("VALID Checkpoint + Lower Log  hash");
+									}
+								} catch (Exception e) {
 									validState = false;
-								} else {
-									logger.debug("VALID Checkpoint + Lower Log  hash");
 								}
+//								byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentShardedStateHash();
+//								if (!Arrays.equals(currentStateHash, upperState.getCheckpointHash())) {
+//									logger.debug("INVALID Checkpoint + Lower Log hash"); 
+//									validState = false;
+//								} else {
+//									logger.debug("VALID Checkpoint + Lower Log  hash");
+//								}
 								stateTransferEndTime = System.currentTimeMillis();								
 								System.out.println("State Transfer process AFTER VALIDATING STATE!");
 								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
