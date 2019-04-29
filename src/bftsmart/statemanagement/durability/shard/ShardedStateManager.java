@@ -298,7 +298,7 @@ public class ShardedStateManager extends DurableStateManager {
 		    				md.reset();
 	    	    			md.update(data, i*shardSize, shardSize);
 		    			} catch (Exception e) {
-	//	    				e.printStackTrace();
+		    				e.printStackTrace();
 		    			}
     					if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
     						logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
@@ -306,15 +306,15 @@ public class ShardedStateManager extends DurableStateManager {
     					}
     	    		}
     				shards = shardedCSTConfig.getNonCommonShards();
+    				int len = shardSize;
     	    		for(int i = 0;i < noncommonShards.length; i++) {
-    	    			if(shards[i] >= nodes.size())
-    	    				break;
-    	    			
 		    			try {
+		    				if(((comm_count+i+1)*shardSize) > data.length)
+		    					len = data.length - ((comm_count+i) * shardSize);
 		    				md.reset();
-		    				md.update(data, (comm_count+i) * shardSize, shardSize);
+		    				md.update(data, (comm_count+i) * shardSize, len);
 		    			} catch (Exception e) {
-	//	    				e.printStackTrace();
+		    				e.printStackTrace();
 		    			}
 
     					if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
@@ -355,7 +355,7 @@ public class ShardedStateManager extends DurableStateManager {
 		    				md.reset();
 	    	    			md.update(data, count * shardSize, shardSize);
 		    			} catch (Exception e) {
-	//	    				e.printStackTrace();
+		    				e.printStackTrace();
 		    			}
 
     					if(!Arrays.equals(md.digest(), nodes.get(count).digest())) {
@@ -396,7 +396,7 @@ public class ShardedStateManager extends DurableStateManager {
 		    				md.reset();
 	    	    			md.update(data, count * shardSize, shardSize);
 		    			} catch (Exception e) {
-	//	    				e.printStackTrace();
+		    				e.printStackTrace();
 		    			}
     					if(!Arrays.equals(md.digest(), nodes.get(count).digest())) {
     						logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
