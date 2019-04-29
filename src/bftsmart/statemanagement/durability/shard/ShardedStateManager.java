@@ -289,7 +289,8 @@ public class ShardedStateManager extends DurableStateManager {
     				ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)chkpntState).getReplicaID());
     				MerkleTree mt = state.getMerkleTree();
     				List<TreeNode> nodes = mt.getLeafs();
-    				byte[] data = ((ShardedCSTState)chkpntState).getSerializedState();
+    				
+    				byte[] data = chkpntState.getSerializedState();
     				logger.debug("DATA : " + data);
     				logger.debug("DATA : " + data);
     				logger.debug("DATA : " + data);
@@ -353,7 +354,8 @@ public class ShardedStateManager extends DurableStateManager {
     				ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)lowerState).getReplicaID());
     				MerkleTree mt = state.getMerkleTree();
     				List<TreeNode> nodes = mt.getLeafs();
-    				byte[] data = state.getSerializedState();
+    				
+    				byte[] data = lowerState.getSerializedState();
     				
     				logger.debug("DATA : " + data);
     				logger.debug("DATA : " + data);
@@ -402,7 +404,8 @@ public class ShardedStateManager extends DurableStateManager {
     				ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)upperState).getReplicaID());
     				MerkleTree mt = state.getMerkleTree();
     				List<TreeNode> nodes = mt.getLeafs();
-    				byte[] data = state.getSerializedState();
+    				
+    				byte[] data = upperState.getSerializedState();
 
     				logger.debug("DATA : " + data);
     				logger.debug("DATA : " + data);
@@ -477,7 +480,7 @@ public class ShardedStateManager extends DurableStateManager {
 			state = firstReceivedStates.get(((ShardedCSTState)lowerState).getReplicaID());
 			mt = state.getMerkleTree();
 			nodes = mt.getLeafs();
-			data = state.getSerializedState();
+			data = lowerState.getSerializedState();
 			
 	        int half;
 			if(common_size%2 == 1)
@@ -503,7 +506,7 @@ public class ShardedStateManager extends DurableStateManager {
 			state = firstReceivedStates.get(((ShardedCSTState)upperState).getReplicaID());
 			mt = state.getMerkleTree();
 			nodes = mt.getLeafs();
-			data = state.getSerializedState();
+			data = upperState.getSerializedState();
 	
 			for(int i = 0; i < half; i++) {
     			try {
