@@ -29,6 +29,9 @@ import java.security.SignatureException;
 import java.util.Arrays;
 
 import bftsmart.reconfiguration.util.Configuration;
+import bftsmart.reconfiguration.util.TOMConfiguration;
+import merkletree.MerkleTree;
+
 import java.security.Security;
 import java.util.Random;
 import javax.crypto.Mac;
@@ -223,6 +226,17 @@ public class TOMUtil {
         } 
                 
         return result;
+    }
+    
+    public static final byte[] computeShardedHash(byte[] data) {        
+        try {
+            MessageDigest md = getHashEngine();            
+            MerkleTree mt = MerkleTree.createTree(md, TOMConfiguration.staticLoad().getShardSize(), data);
+            return mt.getRootHash();
+        } catch (NoSuchAlgorithmException e) {
+            logger.error("Failed to compute hash",e);
+        } 
+        return null;
     }
     
     public static Signature getSigEngine() throws NoSuchAlgorithmException {
