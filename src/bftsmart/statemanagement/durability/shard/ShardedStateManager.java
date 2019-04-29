@@ -25,7 +25,6 @@ import bftsmart.consensus.Consensus;
 import bftsmart.consensus.Epoch;
 import bftsmart.consensus.messages.ConsensusMessage;
 import bftsmart.consensus.messages.MessageFactory;
-import bftsmart.reconfiguration.util.TOMConfiguration;
 import bftsmart.reconfiguration.views.View;
 import bftsmart.statemanagement.SMMessage;
 import bftsmart.statemanagement.durability.CSTSMMessage;
@@ -295,26 +294,25 @@ public class ShardedStateManager extends DurableStateManager {
     				Integer[] shards = shardedCSTConfig.getCommonShards();
     	    		int comm_count = third - nonCommon_size;
     	    		for(int i = 0;i < comm_count; i++) {
-    	    			byte[] shard = new byte[shardSize];
-    	    			try {
-    	    				System.arraycopy(data, i * shardSize, shard, 0, shardSize);
-    	    			} catch (Exception e) {
-//    	    				e.printStackTrace();
-    	    			}
-    					if(!Arrays.equals(md.digest(shard), nodes.get(shards[i]).digest())) {
+		    			try {
+	    	    			md.update(data, i*shardSize, shardSize);
+		    			} catch (Exception e) {
+	//	    				e.printStackTrace();
+		    			}
+    					if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
 //    						logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
     						faultyPages.add(shards[i]);
     					}
     	    		}
     				shards = shardedCSTConfig.getNonCommonShards();
     	    		for(int i = 0;i < noncommonShards.length; i++) {
-    	    			byte[] shard = new byte[shardSize];
-    	    			try { 
-    	    				System.arraycopy(data, (comm_count+i) * shardSize, shard, 0, shardSize);
-    	    			} catch (Exception e) {
-//    	    				e.printStackTrace();
-    	    			}
-    					if(!Arrays.equals(md.digest(shard), nodes.get(shards[i]).digest())) {
+		    			try {
+	    	    			md.update(data, (comm_count+i) * shardSize, shardSize);
+		    			} catch (Exception e) {
+	//	    				e.printStackTrace();
+		    			}
+
+    					if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
 //    						logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
     						faultyPages.add(shards[i]);
     					}
@@ -348,13 +346,13 @@ public class ShardedStateManager extends DurableStateManager {
 
     				int count = 0;
     	    		for(int i = comm_count; i< (comm_count+third) ; i++, count++) {
-    					byte[] shard = new byte[shardSize];
-    					try {
-    						System.arraycopy(data, count * shardSize, shard, 0, shardSize);
-    					} catch (Exception e) {
-//    						e.printStackTrace();
-    					}
-    					if(!Arrays.equals(md.digest(shard), nodes.get(count).digest())) {
+		    			try {
+	    	    			md.update(data, count * shardSize, shardSize);
+		    			} catch (Exception e) {
+	//	    				e.printStackTrace();
+		    			}
+
+    					if(!Arrays.equals(md.digest(), nodes.get(count).digest())) {
 //    						logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
     						faultyPages.add(shards[i]);
     					}
@@ -388,13 +386,12 @@ public class ShardedStateManager extends DurableStateManager {
     				int size = (common_size) - (comm_count+third);
     	    		int count = 0;
     	    		for(int i = (comm_count+third) ; i < (comm_count+third+size) ; i++, count++) {
-    					byte[] shard = new byte[shardSize];
-    					try {
-    						System.arraycopy(data, count * shardSize, shard, 0, shardSize);
-    					} catch (Exception e) {
-//    						e.printStackTrace();
-    					}
-    					if(!Arrays.equals(md.digest(shard), nodes.get(count).digest())) {
+		    			try {
+	    	    			md.update(data, count * shardSize, shardSize);
+		    			} catch (Exception e) {
+	//	    				e.printStackTrace();
+		    			}
+    					if(!Arrays.equals(md.digest(), nodes.get(count).digest())) {
 //    						logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
     						faultyPages.add(shards[i]);
     					}
@@ -430,13 +427,13 @@ public class ShardedStateManager extends DurableStateManager {
 			byte[] data = ((ShardedCSTState)chkpntState).getSerializedState();
 			Integer[] shards = this.shardedCSTConfig.getNonCommonShards();
 			for(int i = 0; i < shards.length; i++) {
-				byte[] shard = new byte[shardSize];
-				try {
-					System.arraycopy(data, i * shardSize, shard, 0, shardSize);
-				} catch (Exception e) {
-//					e.printStackTrace();
-				}
-				if(!Arrays.equals(md.digest(shard), nodes.get(shards[i]).digest())) {
+    			try {
+	    			md.update(data, i * shardSize, shardSize);
+    			} catch (Exception e) {
+//	    				e.printStackTrace();
+    			}
+
+				if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
 //					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
 					faultyPages.add(shards[i]);
 				}
@@ -450,13 +447,13 @@ public class ShardedStateManager extends DurableStateManager {
 			data = state.getSerializedState();
 			
 			for(int i = 0; i < half; i++) {
-				byte[] shard = new byte[shardSize];
-				try {
-					System.arraycopy(data, i * shardSize, shard, 0, shardSize);
-				} catch (Exception e) {
-//					e.printStackTrace();
-				}
-				if(!Arrays.equals(md.digest(shard), nodes.get(i).digest())) {
+    			try {
+	    			md.update(data, i * shardSize, shardSize);
+    			} catch (Exception e) {
+//	    				e.printStackTrace();
+    			}
+
+				if(!Arrays.equals(md.digest(), nodes.get(i).digest())) {
 //					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
 					faultyPages.add(shards[i]);
 				}
@@ -469,13 +466,13 @@ public class ShardedStateManager extends DurableStateManager {
 			data = state.getSerializedState();
 	
 			for(int i = 0; i < half; i++) {
-				byte[] shard = new byte[shardSize];
-				try {
-					System.arraycopy(data, i * shardSize, shard, 0, shardSize);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				if(!Arrays.equals(md.digest(shard), nodes.get(half+i).digest())) {
+    			try {
+	    			md.update(data, i * shardSize, shardSize);
+    			} catch (Exception e) {
+//	    				e.printStackTrace();
+    			}
+
+				if(!Arrays.equals(md.digest(), nodes.get(half+i).digest())) {
 //					logger.info("Faulty shard detected {} from Replica {}", shards[half+i], state.getReplicaID());
 					faultyPages.add(shards[half+i]);
 				}
