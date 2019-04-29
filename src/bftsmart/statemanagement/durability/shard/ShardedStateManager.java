@@ -271,9 +271,10 @@ public class ShardedStateManager extends DurableStateManager {
 			half = (common_size/2);
         
     	if(nonCommon_size < third) {
-    		waitingTasks[0] = executorService.submit(new Callable<Boolean>() {
+    		Future<List<Integer>>[] waitingTasks = new Future[3];
+    		waitingTasks[0] = executorService.submit(new Callable<List<Integer>>() {
     			@Override
-    			public Boolean call() throws Exception {
+    			public List<Integer> call() throws Exception {
     				MessageDigest md = null;
     				try {
     					md = MessageDigest.getInstance(shardedCSTConfig.hashAlgo);
@@ -281,6 +282,7 @@ public class ShardedStateManager extends DurableStateManager {
     					e.printStackTrace();
     				}
 
+    				List<Integer> faultyPages = new LinkedList<>();
 
     				ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)chkpntState).getReplicaID());
     				MerkleTree mt = state.getMerkleTree();
@@ -315,14 +317,14 @@ public class ShardedStateManager extends DurableStateManager {
     					}
     	    		}
 
-    				return true;
+    				return faultyPages;
     			}
     			
     		});
 
-    		waitingTasks[1] = executorService.submit(new Callable<Boolean>() {
+    		waitingTasks[1] = executorService.submit(new Callable<List<Integer>>() {
     			@Override
-    			public Boolean call() throws Exception {
+    			public List<Integer> call() throws Exception {
     				MessageDigest md = null;
     				try {
     					md = MessageDigest.getInstance(shardedCSTConfig.hashAlgo);
@@ -330,6 +332,7 @@ public class ShardedStateManager extends DurableStateManager {
     					e.printStackTrace();
     				}
 
+    				List<Integer> faultyPages = new LinkedList<>();
 
     				ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)lowerState).getReplicaID());
     				MerkleTree mt = state.getMerkleTree();
@@ -353,14 +356,14 @@ public class ShardedStateManager extends DurableStateManager {
     						faultyPages.add(shards[i]);
     					}
     	    		}
-    	    		return true;
+    	    		return faultyPages;
 
     			}
     		});
     		
-    		waitingTasks[2] = executorService.submit(new Callable<Boolean>() {
+    		waitingTasks[2] = executorService.submit(new Callable<List<Integer>>() {
     			@Override
-    			public Boolean call() throws Exception {
+    			public List<Integer> call() throws Exception {
     				MessageDigest md = null;
     				try {
     					md = MessageDigest.getInstance(shardedCSTConfig.hashAlgo);
@@ -369,6 +372,7 @@ public class ShardedStateManager extends DurableStateManager {
     				}
 
     	    		//upperLog
+    				List<Integer> faultyPages = new LinkedList<>();
 
     				ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)upperState).getReplicaID());
     				MerkleTree mt = state.getMerkleTree();
@@ -393,20 +397,20 @@ public class ShardedStateManager extends DurableStateManager {
     					}
     	    		}
 
-    	    		return true;
+    	    		return faultyPages;
 
     			}
     		});
     		
         	try {
-				while(!(waitingTasks[0].get() && waitingTasks[1].get() && waitingTasks[2].get()));
+				faultyPages.addAll(waitingTasks[0].get());
+				faultyPages.addAll(waitingTasks[1].get());
+				faultyPages.addAll(waitingTasks[2].get());
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (ExecutionException e) {
 				e.printStackTrace();
 			}
-
-			
     	}
     	else {
     		MessageDigest md = null;
