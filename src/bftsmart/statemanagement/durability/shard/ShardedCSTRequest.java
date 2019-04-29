@@ -193,8 +193,10 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 			for(Integer shard: faultyShards) {
 				if(commonShards.contains(shard))
 					new_non_common.add(shard);
-				if(nonCommonShards.contains(shard))
+				else if(nonCommonShards.contains(shard))
 					new_common.add(shard);
+				else 
+					new_non_common.add(shard);
 			}
 			this.commonShards = new_common.toArray(new Integer[0]);
 			this.nonCommonShards = new_non_common.toArray(new Integer[0]);
