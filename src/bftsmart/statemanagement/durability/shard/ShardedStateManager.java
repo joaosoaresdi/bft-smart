@@ -344,13 +344,20 @@ public class ShardedStateManager extends DurableStateManager {
     				MerkleTree mt = state.getMerkleTree();
     				List<TreeNode> nodes = mt.getLeafs();
     				byte[] data = state.getSerializedState();
+    				
+    				logger.debug("DATA : " + data);
+    				logger.debug("DATA : " + data);
+    				logger.debug("DATA : " + data);
+    				logger.debug("DATA : " + data.length);
+    				logger.debug("DATA : " + data.length);
+    				logger.debug("DATA : " + data.length);
 
     				Integer[] shards = shardedCSTConfig.getCommonShards();
     	    		int comm_count = third - nonCommon_size;
     	    		//lowerLog
 
     				int count = 0;
-    	    		for(int i = comm_count; i< (comm_count+third) ; i++, count++) {
+    	    		for(int i = comm_count; i < (comm_count+third) ; i++, count++) {
 		    			try {
 		    				md.reset();
 	    	    			md.update(data, count * shardSize, shardSize);
