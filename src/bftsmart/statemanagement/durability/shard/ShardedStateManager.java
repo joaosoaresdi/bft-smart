@@ -306,6 +306,9 @@ public class ShardedStateManager extends DurableStateManager {
     	    		}
     				shards = shardedCSTConfig.getNonCommonShards();
     	    		for(int i = 0;i < noncommonShards.length; i++) {
+    	    			if(shards[i] >= nodes.size())
+    	    				break;
+    	    			
 		    			try {
 	    	    			md.update(data, (comm_count+i) * shardSize, shardSize);
 		    			} catch (Exception e) {
