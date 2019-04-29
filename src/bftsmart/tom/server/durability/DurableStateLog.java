@@ -344,8 +344,11 @@ public class DurableStateLog extends StateLog {
         	}
         	else {
                 data = new byte[half*shardSize];
+                int len = shardSize;
         		for(int i = 0;i < half; i++) {
-					System.arraycopy(ckpState, commonShards[i]*shardSize, data, i*shardSize, shardSize);
+        			if(((commonShards[i]+1)*shardSize)>ckpState.length)
+        				len = ckpState.length - (commonShards[i]*shardSize);
+					System.arraycopy(ckpState, commonShards[i]*shardSize, data, i*shardSize, len);
         		}
         	}
 
