@@ -418,7 +418,7 @@ public class ShardedStateManager extends DurableStateManager {
 
 	
 	//this can be paralellized easily since there are no races
-	ExecutorService executorService = Executors.newCachedThreadPool();
+	ExecutorService executorService = Executors.newFixedThreadPool(3);
 	Future<Boolean>[] waitingTasks = new Future[3];
 	
 	private ShardedCSTState rebuildCSTState(CSTState logLowerState, CSTState logUpperState, CSTState chkPntState) {

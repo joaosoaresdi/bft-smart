@@ -493,6 +493,13 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 		return currentStateHash;
 	}
 
+	public byte[] getCurrentShardedStateHash() {
+		byte[] currentState = getSnapshot();
+		byte[] currentStateHash = TOMUtil.computeShardedHash(currentState);
+		logger.debug("--- State size: " + currentState.length + " Current state Hash: " + Arrays.toString(currentStateHash));
+		return currentStateHash;
+	}
+
 	@Override
 	public byte[] executeUnordered(byte[] command, MessageContext msgCtx) {
 		return appExecuteUnordered(command, msgCtx);
@@ -528,7 +535,6 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 		} else {
 			return log.getState(cstRequest);
 		}
-		
 	}
 
 }
