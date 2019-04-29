@@ -253,6 +253,7 @@ public class ShardedStateManager extends DurableStateManager {
 
 	private Integer[] detectFaultyShards(CSTState lowerState, CSTState upperState, CSTState chkpntState) {
 		logger.debug("detecting faulty shards");
+		long t0 = System.currentTimeMillis();
 		List<Integer> faultyPages = new LinkedList<Integer>();
 		int shardSize = this.shardedCSTConfig.getShardSize();
 		
@@ -474,7 +475,10 @@ public class ShardedStateManager extends DurableStateManager {
 			}
 
     	}
-		return faultyPages.toArray(new Integer[0]);
+		Integer[] ret = faultyPages.toArray(new Integer[0]);
+		System.out.println("State Transfer process DETECT FAULTS");
+		System.out.println("Time: \t" + (System.currentTimeMillis() - t0));
+		return ret;
 	}
 
 	
