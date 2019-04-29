@@ -323,6 +323,8 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 		return ret;
 	}
 		*/
+	
+	//CALLED BY SAVE STATE
 	private final byte[] computeHash(byte[] data) {
 		hashLock.lock();
 		MerkleTree mt = MerkleTree.createTree(md, TOMConfiguration.staticLoad().getShardSize(), data);
@@ -501,6 +503,7 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 		logger.debug("--- State size: " + currentState.length + " Current state Hash: " + Arrays.toString(currentStateHash));
 		return currentStateHash;
 	}
+	
 	public byte[] getCurrentShardedStateHash() {
 		byte[] currentState = getSnapshot();
 		MerkleTree mt = MerkleTree.createTree(md, TOMConfiguration.staticLoad().getShardSize(), currentState);
