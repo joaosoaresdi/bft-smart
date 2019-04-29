@@ -266,12 +266,12 @@ public class ShardedStateManager extends DurableStateManager {
         int common_size = commonShards.length;
         
         int third = (nonCommon_size+common_size)/3;
-        int half;
-		if(common_size%2 == 1)
-			half = ((common_size+1)/2);
-		else 
-			half = (common_size/2);
-        
+
+        System.out.println("detecting faulty shards");
+		System.out.println("noncommonShards : " + noncommonShards.length);
+		System.out.println("commonShards : " + commonShards.length);
+		System.out.println("Third : " + third);
+		
     	if(nonCommon_size < third) {
     		Future<List<Integer>>[] waitingTasks = new Future[3];
     		waitingTasks[0] = executorService.submit(new Callable<List<Integer>>() {
@@ -449,6 +449,13 @@ public class ShardedStateManager extends DurableStateManager {
 			nodes = mt.getLeafs();
 			data = state.getSerializedState();
 			
+	        int half;
+			if(common_size%2 == 1)
+				half = ((common_size+1)/2);
+			else 
+				half = (common_size/2);
+	        
+
 			for(int i = 0; i < half; i++) {
     			try {
 	    			md.update(data, i * shardSize, shardSize);
@@ -523,11 +530,6 @@ public class ShardedStateManager extends DurableStateManager {
         int common_size = commonShards.length;
         
         int third = (nonCommon_size+common_size)/3;
-        int half;
-		if(common_size%2 == 1)
-			half = ((common_size+1)/2);
-		else 
-			half = (common_size/2);
         
 		byte[] logLowerSer = logLowerState.getSerializedState();
 		byte[] logUpperSer = logUpperState.getSerializedState();
@@ -653,6 +655,12 @@ public class ShardedStateManager extends DurableStateManager {
 			*/
     	}
     	else {
+            int half;
+    		if(common_size%2 == 1)
+    			half = ((common_size+1)/2);
+    		else 
+    			half = (common_size/2);
+
     		for(int i = 0;i < commonShards.length; i++) {
     			try {
     				if(i < half) {
