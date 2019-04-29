@@ -505,8 +505,11 @@ public abstract class DurabilityCoordinator implements Recoverable, BatchExecuta
 	}
 	
 	public byte[] getCurrentShardedStateHash() {
+		long t0 = System.currentTimeMillis();
 		byte[] currentState = getSnapshot();
+		System.out.println("get snapshot : " + (System.currentTimeMillis() - t0));
 		MerkleTree mt = MerkleTree.createTree(md, TOMConfiguration.staticLoad().getShardSize(), currentState);
+		System.out.println("create MerkleTree: " + (System.currentTimeMillis() - t0));
 		logger.debug("--- State size: " + currentState.length + " Current state Hash: " + Arrays.toString(mt.getRootHash()));
 		return mt.getRootHash();
 	}

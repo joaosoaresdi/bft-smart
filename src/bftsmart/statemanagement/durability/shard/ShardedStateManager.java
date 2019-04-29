@@ -822,24 +822,13 @@ public class ShardedStateManager extends DurableStateManager {
 								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 
 								//byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
-								try {
-									MerkleTree mt = MerkleTree.createTree(TOMUtil.getHashEngine(), statePlusLower.getShardSize(), statePlusLower.getSerializedState());
-									if (!Arrays.equals(mt.getRootHash(), upperState.getCheckpointHash())) {
-										logger.debug("INVALID Checkpoint + Lower Log hash"); 
-										validState = false;
-									} else {
-										logger.debug("VALID Checkpoint + Lower Log  hash");
-									}
-								} catch (Exception e) {
+								byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentShardedStateHash();
+								if (!Arrays.equals(currentStateHash, upperState.getCheckpointHash())) {
+									logger.debug("INVALID Checkpoint + Lower Log hash"); 
 									validState = false;
+								} else {
+									logger.debug("VALID Checkpoint + Lower Log  hash");
 								}
-//								byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentShardedStateHash();
-//								if (!Arrays.equals(currentStateHash, upperState.getCheckpointHash())) {
-//									logger.debug("INVALID Checkpoint + Lower Log hash"); 
-//									validState = false;
-//								} else {
-//									logger.debug("VALID Checkpoint + Lower Log  hash");
-//								}
 								stateTransferEndTime = System.currentTimeMillis();								
 								System.out.println("State Transfer process AFTER VALIDATING STATE!");
 								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
