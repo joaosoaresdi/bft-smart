@@ -49,10 +49,12 @@ public class StateSenderServer implements Runnable {
 			try {
 				Socket socket = server.accept();
 				logger.debug("Received connection for state transfer");
-				logger.debug("Received connection for state transfer");
+				long t0 = System.currentTimeMillis();
 				ApplicationState state = coordinator.getState(request);
+				System.out.println("Get State time : " + (System.currentTimeMillis() - t0));
 				StateSenderRunnable sender = new StateSenderRunnable(socket, state);
-				new Thread(sender).start();
+				sender.run();
+//				new Thread(sender).start();
 			} catch (Exception e) {
 				e.printStackTrace();
 				logger.error("Problem executing StateSenderServer thread", e);

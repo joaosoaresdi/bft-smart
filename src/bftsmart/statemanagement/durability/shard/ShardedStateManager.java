@@ -65,9 +65,7 @@ public class ShardedStateManager extends DurableStateManager {
 		if(log == null)
 			state = new ShardedCSTState(null, null, null, null, null, null, -1, tomLayer.getLastExec(), -1, SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize(), true);
 		else
-			state = log.buildCurrentState(tomLayer.getLastExec(), SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize());
-		
-		state.setSerializedState(null);
+			state = log.getLastCheckpointState(tomLayer.getLastExec(), SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize());
 		
 		SMMessage currentCIDReply = new StandardSMMessage(me, id, TOMUtil.SM_REPLY_INITIAL, 0, state, null, 0, 0);
 		logger.debug("Sending reply {}", currentCIDReply);
@@ -161,37 +159,20 @@ public class ShardedStateManager extends DurableStateManager {
 		int[] otherReplicas = SVController.getCurrentViewOtherAcceptors();
 		int globalCkpPeriod = SVController.getStaticConf().getGlobalCheckpointPeriod();
 
-		try {
-//			if(firstReceivedStates.isEmpty()) {
-//				CSTRequestF1 cst = new CSTRequestF1(waitingCID);
-//				cst.defineReplicas(otherReplicas, globalCkpPeriod, me);
-//				cstRequest = cst;
-//				CSTSMMessage cstMsg = new CSTSMMessage(me, waitingCID, TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
-//
-//				logger.info("Sending state request to the other replicas {} ", cstMsg);
-//				tomLayer.getCommunication().send(SVController.getCurrentViewOtherAcceptors(), cstMsg);
-//			}
-//			else {
-				ShardedCSTRequest cst = new ShardedCSTRequest(waitingCID, SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize());
-				cst.defineReplicas(otherReplicas, globalCkpPeriod, me);
-				cst.assignShards(firstReceivedStates);
-				
-				logger.debug("\n\t Starting State Transfer: \n" + cst);
-	
-				this.shardedCSTConfig = cst;
-				this.retries = 0;
-				this.statePlusLower = null;
-	
-				stateTransferStartTime = System.currentTimeMillis();
+		ShardedCSTRequest cst = new ShardedCSTRequest(waitingCID, SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize());
+		cst.defineReplicas(otherReplicas, globalCkpPeriod, me);
+		cst.assignShards(firstReceivedStates);
+		
+		logger.debug("\n\t Starting State Transfer: \n" + cst);
 
-				ShardedCSTSMMessage cstMsg = new ShardedCSTSMMessage(me, waitingCID,TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
-				tomLayer.getCommunication().send(SVController.getCurrentViewOtherAcceptors(), cstMsg);
+		this.shardedCSTConfig = cst;
+		this.retries = 0;
+		this.statePlusLower = null;
 
-				//			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		stateTransferStartTime = System.currentTimeMillis();
 
+		ShardedCSTSMMessage cstMsg = new ShardedCSTSMMessage(me, waitingCID,TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
+		tomLayer.getCommunication().send(SVController.getCurrentViewOtherAcceptors(), cstMsg);
 
 		TimerTask stateTask = new TimerTask() {
 			public void run() {                
@@ -208,7 +189,7 @@ public class ShardedStateManager extends DurableStateManager {
 	@Override
 	public void SMRequestDeliver(SMMessage msg, boolean isBFT) {
 		logger.trace("");
-		long t0 = System.currentTimeMillis();
+
 		if (SVController.getStaticConf().isStateTransferEnabled()
 				&& dt.getRecoverer() != null) {
 			logger.info("Received State Transfer Request from " + msg.getSender());
@@ -234,11 +215,6 @@ public class ShardedStateManager extends DurableStateManager {
 					SVController.getCurrentView(), tomLayer.getSynchronizer().getLCManager().getLastReg(),
 					tomLayer.execManager.getCurrentLeader());
 
-			long t1 = System.currentTimeMillis();
-			System.out.println("############# Time to send State : \t" + (t1-t0));
-			System.out.println("############# Time to send State : \t" + (t1-t0));
-			System.out.println("############# Time to send State : \t" + (t1-t0));
-			System.out.println("############# Time to send State : \t" + (t1-t0));
 			logger.info("Sending reply {}", reply);
 			tomLayer.getCommunication().send(new int[]{msg.getSender()}, reply);
 		}
@@ -538,10 +514,8 @@ public class ShardedStateManager extends DurableStateManager {
 	private ShardedCSTState rebuildCSTState(CSTState logLowerState, CSTState logUpperState, CSTState chkPntState) {
 		logger.debug("rebuilding state");
 
-		
 		//TODO: current state should be copied directly into chkpntData
 		// REMOVED SINCE IM NOT TREATING PREVIOUS EXISTING STATE
-		// unecessary 2 arraycopies
 //		byte[] currState = dt.getRecoverer().getState(this.lastCID, true).getSerializedState();
 //		if(currState != null) {
 //			int length = currState.length > rebuiltData.length ? rebuiltData.length : currState.length;
@@ -717,32 +691,9 @@ public class ShardedStateManager extends DurableStateManager {
     			}
     		}
     	}
-		
-//		int i =rebuiltData.length-1;
-//		for(; i > 0; i--) {
-//			if(rebuiltData[i] != '\0')
-//				break;
-//		}
-//		byte[] trimedData = new byte[i+1];
-//		System.arraycopy(rebuiltData, 0, trimedData, 0, i+1);
-		
-//		if( i != chkpntData.length-1) {
-//			byte[] trimedData = new byte[i+1];
-//			System.arraycopy(chkpntData, 0, trimedData, 0, i+1);
-//			if(statePlusLower == null)
-//				return new ShardedCSTState(trimedData,
-//						TOMUtil.getBytes(((ShardedCSTState)chkpntState).getSerializedState()),
-//						stateLower.getLogLower(), ((ShardedCSTState)chkpntState).getLogLowerHash(), null, null,
-//						((ShardedCSTState)chkpntState).getCheckpointCID(), stateUpper.getCheckpointCID(), SVController.getStaticConf().getProcessId(), ((ShardedCSTState)chkpntState).getHashAlgo(), ((ShardedCSTState)chkpntState).getShardSize(), false);
-//			else {
-//				statePlusLower.setSerializedState(trimedData);
-//				return statePlusLower;
-//			}
-//		}
-//		else {
+
 		statePlusLower.setStateHash(TOMUtil.computeShardedHash(statePlusLower.state));
-			return statePlusLower;
-//		}	
+		return statePlusLower;
 	}
 	
 	private static AtomicBoolean CSTfence = new AtomicBoolean(false);

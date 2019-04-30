@@ -103,7 +103,7 @@ public class ShardedCSTRequest extends CSTRequestF1 {
     }
 	
 	//defines the set of common shards between all replicas and defines which are assigned to each replica
-	public void assignShards(ConcurrentHashMap<Integer, ShardedCSTState> firstReceivedStates) throws Exception {
+	public void assignShards(ConcurrentHashMap<Integer, ShardedCSTState> firstReceivedStates){
 		
 		ShardedCSTState chkpntState = firstReceivedStates.get(checkpointReplica);
 		ShardedCSTState upperLogState = firstReceivedStates.get(logUpper);
@@ -114,7 +114,8 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 			System.out.println(chkpntState);
 			System.out.println(upperLogState);
 			System.out.println(lowerLogState);
-			throw new Exception("chkpntState == null || upperLogState == null || lowerLogState == null");
+
+			return;
 		}
 	
 		MerkleTree chkpntMT = chkpntState.getMerkleTree();

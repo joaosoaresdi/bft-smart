@@ -283,7 +283,6 @@ public class DurableStateLog extends StateLog {
 
 				int length = shardSize;
         		for(int i = 0;i < noncommonShards.length; i++) {
-        			System.out.println(noncommonShards[i]);
         			try {
         				if(ckpState.length < ((noncommonShards[i]+1)*shardSize))
         					length = ckpState.length - ((noncommonShards[i])*shardSize);
@@ -542,15 +541,17 @@ public class DurableStateLog extends StateLog {
 //	public ShardedCSTState(byte[] state, byte[] hashCheckpoint, CommandsInfo[] logLower, byte[] hashLogLower,
 //	CommandsInfo[] logUpper, byte[] hashLogUpper, int checkpointCID, int currentCID, int pid, String hashAlgo, int shardSize) {
 
-    public ShardedCSTState buildCurrentState(int lastConsensusID, String mrklTreeHashAlgo, int shardSize) {
+    public ShardedCSTState getLastCheckpointState(int lastConsensusID, String mrklTreeHashAlgo, int shardSize) {
         FileRecoverer fr = new FileRecoverer(id, DEFAULT_DIR);
         lastCkpPath = fr.getLatestFile(".ckp");
         byte[] checkpoint = null;
         if(lastCkpPath != null)
             checkpoint = fr.getCkpState(lastCkpPath);
         
-        return new ShardedCSTState(checkpoint, null, null, null,
+        ShardedCSTState ret = new ShardedCSTState(checkpoint, null, null, null,
                 null, null, getLastCheckpointCID(), lastConsensusID, this.id, mrklTreeHashAlgo, shardSize, true);
+        ret.setSerializedState(null);
+        return ret;
 	}
     
     private ShardedCSTState getShardedStateBeforeGlobal(ShardedCSTRequest request) {

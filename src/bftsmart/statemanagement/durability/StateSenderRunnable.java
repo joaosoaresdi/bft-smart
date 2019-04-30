@@ -40,8 +40,8 @@ public class StateSenderRunnable implements Runnable {
 	@Override
 	public void run() {
 		logger.debug("State transfer started (socket: {})", socket);
-		logger.debug("State transfer started (socket: {})", socket);
 		try {
+			long t0 = System.currentTimeMillis();
 			OutputStream os = socket.getOutputStream();
 			ObjectOutputStream oos = new ObjectOutputStream(os);
 			oos.writeObject(state);
@@ -49,6 +49,7 @@ public class StateSenderRunnable implements Runnable {
 			os.flush();
 			oos.close();
 			os.close();
+			System.out.println("network send time : " + (System.currentTimeMillis()-t0));
 			logger.debug("Replica state transfer successful (bytes: {}, socket: {})", state.getSerializedState().length, socket);
 			logger.debug("Replica state transfer successful (bytes: {}, socket: {})", state.getSerializedState().length, socket);
 		} catch (Exception e) {
