@@ -374,7 +374,7 @@ public class ShardedStateManager extends DurableStateManager {
     	    		int count = 0;
     	    		for(int i = (comm_count+third) ; i < (comm_count+third+size) ; i++, count++) {
     	    			if(data == null) {
-    	    				System.out.println(shards[i]);
+    	    				System.out.println("NULL DATA SHARD : " + shards[i]);
     						faultyPages.add(shards[i]);
     	    			}
     	    			else {
@@ -680,8 +680,6 @@ public class ShardedStateManager extends DurableStateManager {
     		}
     		
     		for(int i = 0;i < noncommonShards.length; i++) {
-    			System.out.println(i);
-    			System.out.println(noncommonShards[i]);
     			try {
     				System.arraycopy(chkpntSer, i*shardSize, statePlusLower.state, noncommonShards[i]*shardSize, shardSize);
     			} catch (Exception e) {
