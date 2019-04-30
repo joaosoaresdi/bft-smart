@@ -522,6 +522,8 @@ public class ShardedStateManager extends DurableStateManager {
 //			System.arraycopy(currState, 0, rebuiltData, 0, length);
 //		}
 		
+		System.out.println(statePlusLower);
+		
 		if(statePlusLower == null) {
 				statePlusLower =  new ShardedCSTState(new byte[shardedCSTConfig.getShardCount() * shardedCSTConfig.getShardSize()],
 						null,
@@ -532,6 +534,10 @@ public class ShardedStateManager extends DurableStateManager {
 
 		Integer[] noncommonShards = shardedCSTConfig.getNonCommonShards();
 		Integer[] commonShards = shardedCSTConfig.getCommonShards();
+		
+		System.out.println(noncommonShards.length);
+		
+		System.out.println(commonShards.length);
 		
 		int shardSize = shardedCSTConfig.getShardSize();
         int nonCommon_size = noncommonShards.length;
@@ -683,6 +689,8 @@ public class ShardedStateManager extends DurableStateManager {
     		}
     		
     		for(int i = 0;i < noncommonShards.length; i++) {
+    			System.out.println(i);
+    			System.out.println(noncommonShards[i]);
     			try {
     				System.arraycopy(chkpntSer, i*shardSize, statePlusLower.state, noncommonShards[i]*shardSize, shardSize);
     			} catch (Exception e) {
