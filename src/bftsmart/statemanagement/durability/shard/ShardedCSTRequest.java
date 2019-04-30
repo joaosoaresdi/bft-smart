@@ -179,12 +179,12 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 			List<Integer> new_common = new LinkedList<>();
 			List<Integer> new_non_common = new LinkedList<>();
 			List<Integer> commonShards = Arrays.asList(this.commonShards);
-			List<Integer> nonCommonShards = Arrays.asList(this.nonCommonShards);
+//			List<Integer> nonCommonShards = Arrays.asList(this.nonCommonShards);
 			for(Integer shard: faultyShards) {
 				if(commonShards.contains(shard))
 					new_non_common.add(shard);
-				else if(nonCommonShards.contains(shard))
-					new_common.add(shard);
+//				else if(nonCommonShards.contains(shard))
+//					new_common.add(shard);
 				else 
 					new_non_common.add(shard);
 			}
