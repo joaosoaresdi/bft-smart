@@ -375,8 +375,8 @@ public class ShardedStateManager extends DurableStateManager {
     	    		for(int i = (comm_count+third) ; i < (comm_count+third+size) ; i++, count++) {
 		    			try {
 		    				int len = shardSize;
-		    				if(((i+1)*shardSize) > data.length)
-		    					len = data.length - ((comm_count+i) * shardSize);
+//		    				if(((i+1)*shardSize) > data.length)
+//		    					len = data.length - ((comm_count+i) * shardSize);
 	    	    			md.update(data, i * shardSize, len);
 		    			} catch (Exception e) {
 		    				e.printStackTrace();
