@@ -16,9 +16,9 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 	protected Integer[] commonShards;
 	protected Integer[] nonCommonShards;
 	
-	private int[] upperReps;
-	private int[] lowerReps;
-	private int[] checkpointReps;
+//	private int[] upperReps;
+//	private int[] lowerReps;
+//	private int[] checkpointReps;
 
 	protected int shardCount; // total number of chkpnt shards
 	protected String hashAlgo;
@@ -84,6 +84,7 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 	 * half of common shards/chunks/pages checkpointReplica sends non-common
 	 * shards/chunks/pages
 	 */
+	/*
 	@Override
 	public void defineReplicas(int[] otherReplicas, int globalCkpPeriod, int me) {
 		int N = otherReplicas.length + 1; // The total number of replicas is the others plus me
@@ -113,6 +114,7 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 			}
 		}
 	}
+	*/
 
 	// defines the set of common shards between all replicas and defines which are
 	// assigned to each replica
