@@ -374,6 +374,7 @@ public class ShardedStateManager extends DurableStateManager {
     	    		int count = 0;
     	    		for(int i = (comm_count+third) ; i < (comm_count+third+size) ; i++, count++) {
     	    			if(data == null) {
+    	    				System.out.println(shards[i]);
     						faultyPages.add(shards[i]);
     	    			}
     	    			else {
@@ -396,7 +397,6 @@ public class ShardedStateManager extends DurableStateManager {
     	    		}
 
     	    		return faultyPages;
-
     			}
     		});
     		
