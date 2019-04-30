@@ -12,10 +12,14 @@ import merkletree.MerkleTree;
 public class ShardedCSTRequest extends CSTRequestF1 {
 
 	private static final long serialVersionUID = -5984506128894126706L;
-	
+
 	protected Integer[] commonShards;
 	protected Integer[] nonCommonShards;
 	
+	private int[] upperReps;
+	private int[] lowerReps;
+	private int[] checkpointReps;
+
 	protected int shardCount; // total number of chkpnt shards
 	protected String hashAlgo;
 	protected int shardSize;
@@ -31,10 +35,9 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		return "ShardedCSTRequest [logUpper=" + logUpper + ", logLower=" + logLower + ", ckpPeriod=" + ckpPeriod
 				+ ", logUpperSize=" + logUpperSize + ", logLowerSize=" + logLowerSize + ", address=" + address
 				+ ", cid=" + cid + ", checkpointReplica=" + checkpointReplica + ",\n commonShards="
-				+ commonShards.length + ",\n nonCommonShards.length=" + nonCommonShards.length
-				+ ",\n shardCount=" + shardCount + ", hashAlgo=" + hashAlgo + ", shardSize=" + shardSize + "]";
+				+ commonShards.length + ",\n nonCommonShards.length=" + nonCommonShards.length + ",\n shardCount="
+				+ shardCount + ", hashAlgo=" + hashAlgo + ", shardSize=" + shardSize + "]";
 	}
-
 
 	public Integer[] getCommonShards() {
 		return commonShards;
@@ -71,127 +74,96 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 	public String getHashAlgo() {
 		return hashAlgo;
 	}
-	
+
 	public int getShardSize() {
 		return shardSize;
 	}
-	
+
 	/*
-	 * logLower sends first half of common shards/chunks/pages
-	 * logUpper sends second half of common shards/chunks/pages
-	 * checkpointReplica sends non-common shards/chunks/pages
+	 * logLower sends first half of common shards/chunks/pages logUpper sends second
+	 * half of common shards/chunks/pages checkpointReplica sends non-common
+	 * shards/chunks/pages
 	 */
 	@Override
-	public void defineReplicas(int[] otherReplicas, int globalCkpPeriod, int me) {    	
-    	int N = otherReplicas.length + 1; // The total number of replicas is the others plus me 
-    	ckpPeriod = globalCkpPeriod / N;
-    	// case of recovering from a crash before the occurrence of a checkpoint
-    	if (cid < globalCkpPeriod) {
-    		logUpper = otherReplicas[0];
-    		logLower = otherReplicas[1];
-    		checkpointReplica = otherReplicas[2];
-    		logUpperSize = cid + 1;
-    	} else {
-    		logLowerSize = ckpPeriod;
-    		logUpperSize = (cid + 1) % ckpPeriod;
-    		// position of the replica with the oldest checkpoint in the others array
-    		int oldestReplicaPosition = getOldest(otherReplicas, cid, globalCkpPeriod, me);
-    		logUpper = otherReplicas[(oldestReplicaPosition + 2) % otherReplicas.length];
-    		logLower = otherReplicas[oldestReplicaPosition];
-    		checkpointReplica = otherReplicas[(oldestReplicaPosition + 1) % otherReplicas.length];
-    	}
-    }
-	
-	//defines the set of common shards between all replicas and defines which are assigned to each replica
-	public void assignShards(ConcurrentHashMap<Integer, ShardedCSTState> firstReceivedStates){
-		
+	public void defineReplicas(int[] otherReplicas, int globalCkpPeriod, int me) {
+		int N = otherReplicas.length + 1; // The total number of replicas is the others plus me
+		ckpPeriod = globalCkpPeriod / N;
+		// case of recovering from a crash before the occurrence of a checkpoint
+		// position of the replica with the oldest checkpoint in the others array
+		int oldestReplicaPosition = getOldest(otherReplicas, cid, globalCkpPeriod, me);
+		int repsPerGroup = otherReplicas.length / 3;
+		upperReps = new int[repsPerGroup];
+		lowerReps = new int[repsPerGroup];
+		checkpointReps = new int[repsPerGroup];
+
+		if (cid < globalCkpPeriod) {
+			logUpperSize = cid + 1;
+			for(int i = 0; i < repsPerGroup; i++) {
+				upperReps[i] = otherReplicas[(2*repsPerGroup+i) % otherReplicas.length];
+				lowerReps[i] = otherReplicas[(i) % otherReplicas.length];
+				checkpointReps[i] = otherReplicas[(repsPerGroup +i) % otherReplicas.length];
+			}
+		} else {
+			logLowerSize = ckpPeriod;
+			logUpperSize = (cid + 1) % ckpPeriod;
+			for(int i = 0; i < repsPerGroup; i++) {
+				upperReps[i] = otherReplicas[(oldestReplicaPosition + (2 * repsPerGroup) + i) % otherReplicas.length];
+				lowerReps[i] = otherReplicas[(oldestReplicaPosition+i) % otherReplicas.length];
+				checkpointReps[i] = otherReplicas[(oldestReplicaPosition + repsPerGroup +i) % otherReplicas.length];
+			}
+		}
+	}
+
+	// defines the set of common shards between all replicas and defines which are
+	// assigned to each replica
+	public void assignShards(ConcurrentHashMap<Integer, ShardedCSTState> firstReceivedStates) {
+
 		ShardedCSTState chkpntState = firstReceivedStates.get(checkpointReplica);
 		ShardedCSTState upperLogState = firstReceivedStates.get(logUpper);
 		ShardedCSTState lowerLogState = firstReceivedStates.get(logLower);
-		
-		if(chkpntState == null || upperLogState == null || lowerLogState == null) {
-			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");			
+
+		if (chkpntState == null || upperLogState == null || lowerLogState == null) {
+			System.out.println(this.getClass().getName() + ".assignShards: PANIC!!!!");
 			System.out.println(chkpntState);
 			System.out.println(upperLogState);
 			System.out.println(lowerLogState);
 
 			return;
 		}
-	
+
 		MerkleTree chkpntMT = chkpntState.getMerkleTree();
 		MerkleTree upperLogMT = upperLogState.getMerkleTree();
 		MerkleTree lowerLogtMT = lowerLogState.getMerkleTree();
 
-		this.shardCount = chkpntMT.getLeafCount();		
+		this.shardCount = chkpntMT.getLeafCount();
 
-		//Common shards between other replicas
+		// Common shards between other replicas
 		HashSet<Integer> commonShards = new HashSet<Integer>();
-		if(chkpntMT.getHeight() == upperLogMT.getHeight()) {
+		if (chkpntMT.getHeight() == upperLogMT.getHeight()) {
 			commonShards = chkpntMT.getEqualPageIndexs(upperLogMT);
-			// THIS IS TOO HEAVY
-			if(chkpntMT.getHeight() == lowerLogtMT.getHeight())
+			if (chkpntMT.getHeight() == lowerLogtMT.getHeight())
 				commonShards.retainAll(chkpntMT.getEqualPageIndexs(lowerLogtMT));
-		}
-		else {
-			if(chkpntMT.getHeight() == lowerLogtMT.getHeight())
+		} else {
+			if (chkpntMT.getHeight() == lowerLogtMT.getHeight())
 				commonShards = chkpntMT.getEqualPageIndexs(lowerLogtMT);
 		}
-		
-//		System.out.println(shardCount-commonShards.size());
-		nonCommonShards = new Integer[shardCount-commonShards.size()];
+
+		nonCommonShards = new Integer[shardCount - commonShards.size()];
 		int count = 0;
-		for(int i = 0;i < shardCount; i++) {
-			if(!commonShards.contains(i)) {
+		for (int i = 0; i < shardCount; i++) {
+			if (!commonShards.contains(i)) {
 				nonCommonShards[count] = i;
-				count ++;
+				count++;
 			}
 		}
 
-//		MessageDigest md = null;
-//		try {
-//			md = MessageDigest.getInstance(hashAlgo);
-//		} catch (NoSuchAlgorithmException e) {
-//			e.printStackTrace();
-//		}
-		
-		//remove currently available shards in common shards set 
-//		MerkleTree localStateMT = MerkleTree.createTree(md, shardSize, localState);
-//		System.out.println("localStateMT.getLeafCount() : " + localStateMT.getLeafCount());
-//		System.out.println("localStateMT.getHeight() : " + localStateMT.getHeight());
-//		commonShards.removeAll(localStateMT.getEqualPageIndexs(upperLogMT));
-//		commonShards.removeAll(localStateMT.getEqualPageIndexs(lowerLogtMT));
-		
 		this.commonShards = commonShards.toArray(new Integer[0]);
 		Arrays.sort(this.commonShards);
-		
-//		System.out.println("COMMON SHARDS : " + this.commonShards.length);
-//		System.out.println("NONCOMMON SHARDS : " + this.nonCommonShards.length);
 	}
 
+	//TODO: needs to be redone
 	public void reAssignShards(Integer[] faultyShards) {
-		if(Arrays.asList(commonShards).containsAll(Arrays.asList(faultyShards))) {
-			nonCommonShards = faultyShards;
-			commonShards = new Integer[0];
-//		} // CANNOT DO THIS SINCE NONCOMMON SHARDS CANNOT BE REQUESTED TO EVERYONE
-//		else if(Arrays.asList(nonCommonShards).containsAll(Arrays.asList(faultyShards))) {
-//			commonShards = faultyShards;
-//			nonCommonShards = new Integer[0];
-		} else {
-			List<Integer> new_common = new LinkedList<>();
-			List<Integer> new_non_common = new LinkedList<>();
-			List<Integer> commonShards = Arrays.asList(this.commonShards);
-//			List<Integer> nonCommonShards = Arrays.asList(this.nonCommonShards);
-			for(Integer shard: faultyShards) {
-				if(commonShards.contains(shard))
-					new_non_common.add(shard);
-//				else if(nonCommonShards.contains(shard))
-//					new_common.add(shard);
-				else 
-					new_non_common.add(shard);
-			}
-			this.commonShards = new_common.toArray(new Integer[0]);
-			this.nonCommonShards = new_non_common.toArray(new Integer[0]);
-		}
+		nonCommonShards = faultyShards;
+		commonShards = new Integer[0];
 	}
-
 }
