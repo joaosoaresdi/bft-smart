@@ -304,23 +304,11 @@ public class DurableStateLog extends StateLog {
         	}
         	else {
         		data = new byte[nonCommon_size*shardSize];
-				int length = shardSize;
+				int len = shardSize;
         		for(int i = 0;i < noncommonShards.length; i++) {
     				if(ckpState.length < ((noncommonShards[i]+1)*shardSize))
-    					length = ckpState.length - ((noncommonShards[i])*shardSize);
-        			try {
-        				System.arraycopy(ckpState, noncommonShards[i]*shardSize, data, i*shardSize, length);
-        			} catch (Exception e) {
-        				e.printStackTrace();
-        				System.out.println(i);
-        				System.out.println(ckpState.length);
-        				System.out.println(noncommonShards[i]);
-        				System.out.println(noncommonShards[i]*shardSize);
-        				System.out.println(data.length);
-        				System.out.println((comm_count+i));
-        				System.out.println((comm_count+i)*shardSize);
-        				System.out.println(length);
-        			}
+    					len = ckpState.length - ((noncommonShards[i])*shardSize);
+    				System.arraycopy(ckpState, noncommonShards[i]*shardSize, data, i*shardSize, len);
         		}
         	}
         	
@@ -340,20 +328,12 @@ public class DurableStateLog extends StateLog {
             byte[] data;
         	if(nonCommon_size < third) {
                 data = new byte[third*shardSize];
-                logger.debug("" + ckpState);
     			System.arraycopy(ckpState, commonShards[comm_count]*shardSize, data, 0, third*shardSize);
         	}
         	else {
                 data = new byte[half*shardSize];
-                int len = shardSize;
         		for(int i = 0;i < half; i++) {
-        			if(commonShards[i]*shardSize > ckpState.length)
-        				break;
-        			
-        			if(((commonShards[i]+1)*shardSize)>ckpState.length)
-        				len = ckpState.length - (commonShards[i]*shardSize);
-        			
-					System.arraycopy(ckpState, commonShards[i]*shardSize, data, i*shardSize, len);
+					System.arraycopy(ckpState, commonShards[i]*shardSize, data, i*shardSize, shardSize);
         		}
         	}
 
@@ -386,9 +366,7 @@ public class DurableStateLog extends StateLog {
             int lastCIDInState = lastCheckpointCID + cstRequest.getLogUpperSize();
 //            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
             if(TOMConfiguration.staticLoad().simulateFault()) {
-            	data[data.length-1] = 0;
-            	data[0] = 0;
-	            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+	            ShardedCSTState cstState = new ShardedCSTState(null, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
 	            return cstState;
             }
             else  {
