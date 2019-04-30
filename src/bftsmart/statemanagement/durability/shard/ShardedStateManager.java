@@ -94,6 +94,7 @@ public class ShardedStateManager extends DurableStateManager {
 				queries.put(queryID, replies);
 			}
 		}
+		
 		Map<Integer, Integer> replies = queries.get(queryID);
 		replies.put(smsg.getSender(), smsg.getState().getLastCID());
 
@@ -173,7 +174,7 @@ public class ShardedStateManager extends DurableStateManager {
 //			else {
 				ShardedCSTRequest cst = new ShardedCSTRequest(waitingCID, SVController.getStaticConf().getMrklTreeHashAlgo(), SVController.getStaticConf().getShardSize());
 				cst.defineReplicas(otherReplicas, globalCkpPeriod, me);
-				cst.assignShards(firstReceivedStates, dt.getRecoverer().getState(this.lastCID, true).getSerializedState());
+				cst.assignShards(firstReceivedStates);
 				
 				logger.debug("\n\t Starting State Transfer: \n" + cst);
 	

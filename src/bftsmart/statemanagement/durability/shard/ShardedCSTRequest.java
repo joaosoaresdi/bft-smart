@@ -103,7 +103,7 @@ public class ShardedCSTRequest extends CSTRequestF1 {
     }
 	
 	//defines the set of common shards between all replicas and defines which are assigned to each replica
-	public void assignShards(ConcurrentHashMap<Integer, ShardedCSTState> firstReceivedStates, byte[] localState) throws Exception {
+	public void assignShards(ConcurrentHashMap<Integer, ShardedCSTState> firstReceivedStates) throws Exception {
 		
 		ShardedCSTState chkpntState = firstReceivedStates.get(checkpointReplica);
 		ShardedCSTState upperLogState = firstReceivedStates.get(logUpper);
@@ -114,7 +114,6 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 			System.out.println(chkpntState);
 			System.out.println(upperLogState);
 			System.out.println(lowerLogState);
-			//TODO: deal with this
 			throw new Exception("chkpntState == null || upperLogState == null || lowerLogState == null");
 		}
 	
@@ -122,15 +121,6 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		MerkleTree upperLogMT = upperLogState.getMerkleTree();
 		MerkleTree lowerLogtMT = lowerLogState.getMerkleTree();
 
-//		System.out.println("chkpntMT.getLeafCount() : " + chkpntMT.getLeafCount());
-//		System.out.println("chkpntMT.getHeight() : " + chkpntMT.getHeight());
-//
-//		System.out.println("upperLogMT.getLeafCount() : " + upperLogMT.getLeafCount());
-//		System.out.println("upperLogMT.getHeight() : " + upperLogMT.getHeight());
-//
-//		System.out.println("lowerLogtMT.getLeafCount() : " + lowerLogtMT.getLeafCount());
-//		System.out.println("lowerLogtMT.getHeight() : " + lowerLogtMT.getHeight());
-//
 		this.shardCount = chkpntMT.getLeafCount();		
 
 		//Common shards between other replicas
@@ -138,8 +128,8 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		if(chkpntMT.getHeight() == upperLogMT.getHeight()) {
 			commonShards = chkpntMT.getEqualPageIndexs(upperLogMT);
 			// THIS IS TOO HEAVY
-//			if(chkpntMT.getHeight() == lowerLogtMT.getHeight())
-//				commonShards.retainAll(chkpntMT.getEqualPageIndexs(lowerLogtMT));
+			if(chkpntMT.getHeight() == lowerLogtMT.getHeight())
+				commonShards.retainAll(chkpntMT.getEqualPageIndexs(lowerLogtMT));
 		}
 		else {
 			if(chkpntMT.getHeight() == lowerLogtMT.getHeight())
@@ -181,10 +171,10 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		if(Arrays.asList(commonShards).containsAll(Arrays.asList(faultyShards))) {
 			nonCommonShards = faultyShards;
 			commonShards = new Integer[0];
-		}
-		else if(Arrays.asList(nonCommonShards).containsAll(Arrays.asList(faultyShards))) {
-			commonShards = faultyShards;
-			nonCommonShards = new Integer[0];
+//		} // CANNOT DO THIS SINCE NONCOMMON SHARDS CANNOT BE REQUESTED TO EVERYONE
+//		else if(Arrays.asList(nonCommonShards).containsAll(Arrays.asList(faultyShards))) {
+//			commonShards = faultyShards;
+//			nonCommonShards = new Integer[0];
 		} else {
 			List<Integer> new_common = new LinkedList<>();
 			List<Integer> new_non_common = new LinkedList<>();
