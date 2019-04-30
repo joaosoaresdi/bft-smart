@@ -268,46 +268,37 @@ public class ShardedStateManager extends DurableStateManager {
     				List<TreeNode> nodes = mt.getLeafs();
     				
     				byte[] data = chkpntState.getSerializedState();
-    				logger.debug("DATA : " + data);
-    				logger.debug("DATA : " + data);
-    				logger.debug("DATA : " + data);
-    				logger.debug("DATA : " + data.length);
-    				logger.debug("DATA : " + data.length);
-    				logger.debug("DATA : " + data.length);
-
 
     				Integer[] shards = shardedCSTConfig.getCommonShards();
     	    		int comm_count = third - nonCommon_size;
     	    		for(int i = 0;i < comm_count; i++) {
 		    			try {
-		    				md.reset();
 	    	    			md.update(data, i*shardSize, shardSize);
 		    			} catch (Exception e) {
 		    				e.printStackTrace();
+		    				md.reset();
 		    			}
     					if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
     						logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
     						faultyPages.add(shards[i]);
-    						break;
     					}
     	    		}
     	    		
     				shards = shardedCSTConfig.getNonCommonShards();
-    				int len = shardSize;
     	    		for(int i = 0;i < noncommonShards.length; i++) {
 		    			try {
+		    				int len = shardSize;
 		    				if(((comm_count+i+1)*shardSize) > data.length)
 		    					len = data.length - ((comm_count+i) * shardSize);
-		    				md.reset();
 		    				md.update(data, (comm_count+i) * shardSize, len);
 		    			} catch (Exception e) {
 		    				e.printStackTrace();
+		    				md.reset();
 		    			}
 
     					if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
     						logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
     						faultyPages.add(shards[i]);
-    						break;
     					}
     	    		}
 
@@ -334,24 +325,16 @@ public class ShardedStateManager extends DurableStateManager {
     				
     				byte[] data = lowerState.getSerializedState();
     				
-    				logger.debug("DATA : " + data);
-    				logger.debug("DATA : " + data);
-    				logger.debug("DATA : " + data);
-    				logger.debug("DATA : " + data.length);
-    				logger.debug("DATA : " + data.length);
-    				logger.debug("DATA : " + data.length);
-
     				Integer[] shards = shardedCSTConfig.getCommonShards();
     	    		int comm_count = third - nonCommon_size;
     	    		//lowerLog
-
     				int count = 0;
     	    		for(int i = comm_count; i < (comm_count+third) ; i++, count++) {
 		    			try {
-		    				md.reset();
 	    	    			md.update(data, count * shardSize, shardSize);
 		    			} catch (Exception e) {
 		    				e.printStackTrace();
+		    				md.reset();
 		    			}
 
     					if(!Arrays.equals(md.digest(), nodes.get(count).digest())) {
@@ -384,26 +367,28 @@ public class ShardedStateManager extends DurableStateManager {
     				
     				byte[] data = upperState.getSerializedState();
 
-    				logger.debug("DATA : " + data);
-    				logger.debug("DATA : " + data);
-    				logger.debug("DATA : " + data);
-    				logger.debug("DATA : " + data.length);
-    				logger.debug("DATA : " + data.length);
-    				logger.debug("DATA : " + data.length);
-
     				Integer[] shards = shardedCSTConfig.getCommonShards();
     	    		int comm_count = third - nonCommon_size;
 
     				int size = (common_size) - (comm_count+third);
     	    		int count = 0;
     	    		for(int i = (comm_count+third) ; i < (comm_count+third+size) ; i++, count++) {
+	    				int len = shardSize;
+	    				if(((i+1)*shardSize) > data.length)
+	    					len = data.length - ((comm_count+i) * shardSize);
 		    			try {
-		    				md.reset();
-	    	    			md.update(data, count * shardSize, shardSize);
+	    	    			md.update(data, count * shardSize, len);
 		    			} catch (Exception e) {
 		    				e.printStackTrace();
+		    				md.reset();
 		    			}
-    					if(!Arrays.equals(md.digest(), nodes.get(count).digest())) {
+		    			
+		    			byte[] digest = md.digest();
+		    			System.out.println(digest);
+		    			System.out.println(nodes.get(count));
+		    			System.out.println(nodes.get(count).digest());
+		    			
+    					if(!Arrays.equals(digest, nodes.get(count).digest())) {
     						logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
     						faultyPages.add(shards[i]);
     						break;
@@ -559,6 +544,16 @@ public class ShardedStateManager extends DurableStateManager {
     			public Boolean call() throws Exception {
     				System.arraycopy(chkpntSer, 0, statePlusLower.state, commonShards[0]*shardSize, shardSize);
     				System.arraycopy(chkpntSer, shardSize, statePlusLower.state, commonShards[1]*shardSize, (comm_count-1)*shardSize);
+    				
+    	    		//non common
+    	    		for(int i = 0;i < noncommonShards.length; i++) {
+	        			try {
+	        				System.arraycopy(chkpntSer, (comm_count+i)*shardSize, statePlusLower.state, noncommonShards[i]*shardSize, shardSize);
+	        			} catch (Exception e) {
+	        				e.printStackTrace();
+	        				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+	        			}
+	        		}
     				return true;
     			}
     			
@@ -584,16 +579,6 @@ public class ShardedStateManager extends DurableStateManager {
     			}
     			
     		});
-
-    		//non common
-    		for(int i = 0;i < noncommonShards.length; i++) {
-    			try {
-    				System.arraycopy(chkpntSer, (comm_count+i)*shardSize, statePlusLower.state, noncommonShards[i]*shardSize, shardSize);
-    			} catch (Exception e) {
-    				e.printStackTrace();
-    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
-    			}
-    		}
 
     		//when not sorted
     		/*
