@@ -548,16 +548,21 @@ public class ShardedStateManager extends DurableStateManager {
     		waitingTasks[0] = executorService.submit(new Callable<Boolean>() {
     			@Override
     			public Boolean call() throws Exception {
-    				System.arraycopy(chkpntSer, 0, statePlusLower.state, commonShards[0]*shardSize, shardSize);
-    				System.arraycopy(chkpntSer, shardSize, statePlusLower.state, commonShards[1]*shardSize, (comm_count-1)*shardSize);
-    				
+    				try {
+	    				System.arraycopy(chkpntSer, 0, statePlusLower.state, commonShards[0]*shardSize, shardSize);
+	    				System.arraycopy(chkpntSer, shardSize, statePlusLower.state, commonShards[1]*shardSize, (comm_count-1)*shardSize);
+    				}catch (Exception e) {
+    					e.printStackTrace();
+        				logger.error("Error rebuilding state. IGNORING IT FOR NOW");
+    				}
+
     	    		//non common
     	    		for(int i = 0;i < noncommonShards.length; i++) {
 	        			try {
 	        				System.arraycopy(chkpntSer, (comm_count+i)*shardSize, statePlusLower.state, noncommonShards[i]*shardSize, shardSize);
 	        			} catch (Exception e) {
 	        				e.printStackTrace();
-	        				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+	        				logger.error("Error rebuilding state. IGNORING IT FOR NOW");
 	        			}
 	        		}
     				return true;
@@ -570,7 +575,12 @@ public class ShardedStateManager extends DurableStateManager {
     			@Override
     			public Boolean call() throws Exception {
     	    		//common lowerlog
-    				System.arraycopy(logLowerSer, 0, statePlusLower.state, commonShards[comm_count]*shardSize, (third)*shardSize);
+    				try {
+    					System.arraycopy(logLowerSer, 0, statePlusLower.state, commonShards[comm_count]*shardSize, (third)*shardSize);
+    				}catch (Exception e) {
+    					e.printStackTrace();
+        				logger.error("Error rebuilding state. IGNORING IT FOR NOW");
+    				}
     				return true;
     			}
     			
@@ -580,7 +590,12 @@ public class ShardedStateManager extends DurableStateManager {
     			@Override
     			public Boolean call() throws Exception {
     	    		//common upperlog
-    				System.arraycopy(logUpperSer, 0, statePlusLower.state, commonShards[comm_count+third]*shardSize, logUpperSer.length);
+    				try {
+    					System.arraycopy(logUpperSer, 0, statePlusLower.state, commonShards[comm_count+third]*shardSize, logUpperSer.length);
+    				}catch (Exception e) {
+    					e.printStackTrace();
+        				logger.error("Error rebuilding state. IGNORING IT FOR NOW");
+    				}
     				return true;
     			}
     			
@@ -666,29 +681,71 @@ public class ShardedStateManager extends DurableStateManager {
     		else 
     			half = (common_size/2);
 
-    		for(int i = 0;i < commonShards.length; i++) {
-    			try {
-    				if(i < half) {
-    					System.arraycopy(logLowerSer, i*shardSize, statePlusLower.state, commonShards[i]*shardSize, shardSize);
-    				}else {
-    					System.arraycopy(logUpperSer, (i-half)*shardSize, statePlusLower.state, commonShards[i]*shardSize, shardSize);
-    				}
-    			} catch (Exception e) {
-    				e.printStackTrace();
-    				logger.error("Error copying shard during state rebuild. IGNORING IT FOR NOW");
+    		waitingTasks[0] = executorService.submit(new Callable<Boolean>() {
+    			@Override
+    			public Boolean call() throws Exception {
+    	    		//common lowerlog
+    	    		for(int i = 0;i < half; i++) {
+    	    			try {
+	    					System.arraycopy(logLowerSer, i*shardSize, statePlusLower.state, commonShards[i]*shardSize, shardSize);
+    	    			} catch (Exception e) {
+    	    				e.printStackTrace();
+            				logger.error("Error rebuilding state. IGNORING IT FOR NOW");
+    	    			}
+    	    		}
+    	    		return true;
     			}
-    		}
-    		
-    		for(int i = 0;i < noncommonShards.length; i++) {
-    			try {
-    				System.arraycopy(chkpntSer, i*shardSize, statePlusLower.state, noncommonShards[i]*shardSize, shardSize);
-    			} catch (Exception e) {
-    				e.printStackTrace();
-    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
-    			}
-    		}
-    	}
+    		});
 
+    		waitingTasks[1] = executorService.submit(new Callable<Boolean>() {
+    			@Override
+    			public Boolean call() throws Exception {
+    	    		//common upperlog
+    	    		for(int i = half;i < commonShards.length; i++) {
+    	    			try {
+	    					System.arraycopy(logUpperSer, (i-half)*shardSize, statePlusLower.state, commonShards[i]*shardSize, shardSize);
+    	    			} catch (Exception e) {
+    	    				e.printStackTrace();
+    	    				logger.error("Error copying shard during state rebuild. IGNORING IT FOR NOW");
+    	    			}
+    	    		}
+    				return true;
+    			}
+    		});
+
+    		waitingTasks[2] = executorService.submit(new Callable<Boolean>() {
+    			@Override
+    			public Boolean call() throws Exception {
+    	    		//noncommon
+    	    		for(int i = 0;i < noncommonShards.length; i++) {
+    	    			try {
+    	    				System.arraycopy(chkpntSer, i*shardSize, statePlusLower.state, noncommonShards[i]*shardSize, shardSize);
+    	    			} catch (Exception e) {
+    	    				e.printStackTrace();
+    	    				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+    	    			}
+    	    		}
+    				return true;
+    			}
+    		});
+
+    		
+    	}
+		try {
+			while(!waitingTasks[0].get());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		try {
+			while(!waitingTasks[1].get());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		try {
+			while(!waitingTasks[2].get());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		statePlusLower.setStateHash(TOMUtil.computeShardedHash(statePlusLower.state));
 		return statePlusLower;
 	}
@@ -787,13 +844,7 @@ public class ShardedStateManager extends DurableStateManager {
 								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
 								
 								statePlusLower = rebuildCSTState(lowerState, upperState, (CSTState)chkpntState);
-								try {
-									while(!(waitingTasks[0].get()&&waitingTasks[1].get()&&waitingTasks[2].get()));
-								} catch (InterruptedException e) {
-									e.printStackTrace();
-								} catch (ExecutionException e) {
-									e.printStackTrace();
-								}
+								
 								stateTransferEndTime = System.currentTimeMillis();
 								System.out.println("State Transfer process AFTER statePlusLower/REBUILD!");
 								System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
