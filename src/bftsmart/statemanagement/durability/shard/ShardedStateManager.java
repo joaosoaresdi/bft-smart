@@ -334,13 +334,17 @@ public class ShardedStateManager extends DurableStateManager {
     				int count = 0;
     	    		for(int i = comm_count; i < (comm_count+third) ; i++, count++) {
 		    			try {
-	    	    			md.update(data, i * shardSize, shardSize);
+	    	    			md.update(data, count * shardSize, shardSize);
 		    			} catch (Exception e) {
 		    				e.printStackTrace();
 		    				md.reset();
+		    				System.out.println(i);
+		    				System.out.println(data.length);
+		    				System.out.println(count);
+		    				System.out.println(count * shardSize);
 		    			}
 
-    					if(!Arrays.equals(md.digest(), nodes.get(count).digest())) {
+    					if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
     						logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
     						faultyPages.add(shards[i]);
     					}
@@ -396,7 +400,7 @@ public class ShardedStateManager extends DurableStateManager {
 			    				System.out.println(len);
 			    			}
 			    						    			
-	    					if(!Arrays.equals(md.digest(), nodes.get(count).digest())) {
+	    					if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
 //	    						logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
 	    						faultyPages.add(shards[i]);
 	    					}
