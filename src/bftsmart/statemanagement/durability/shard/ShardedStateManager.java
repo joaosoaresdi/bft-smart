@@ -232,8 +232,6 @@ public class ShardedStateManager extends DurableStateManager {
 	}
 
 	private Integer[] detectFaultyShards(CSTState lowerState, CSTState upperState, CSTState chkpntState) {
-		logger.debug("detecting faulty shards");
-
 		stateTransferEndTime = System.currentTimeMillis();
 		System.out.println("State Transfer process BEFORE DETECT FAULTY SHARDS!");
 		System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
@@ -248,11 +246,6 @@ public class ShardedStateManager extends DurableStateManager {
 		int common_size = commonShards.length;
 
 		int third = (nonCommon_size + common_size) / 3;
-
-		logger.debug("detecting faulty shards");
-		logger.debug("noncommonShards : " + noncommonShards.length);
-		logger.debug("commonShards : " + commonShards.length);
-		logger.debug("Third : " + third);
 
 		if (nonCommon_size < third) {
 			Future<List<Integer>>[] waitingTasks = new Future[3];
@@ -270,7 +263,7 @@ public class ShardedStateManager extends DurableStateManager {
 
 					ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState) lowerState).getReplicaID());
 					MerkleTree mt = state.getMerkleTree();
-					List<TreeNode> nodes = mt.getLeafs();
+					HashMap<Integer, TreeNode> nodes = mt.getLeafs();
 
 					byte[] data = lowerState.getSerializedState();
 
@@ -299,7 +292,6 @@ public class ShardedStateManager extends DurableStateManager {
 
 				}
 			});
-			System.out.println("FAULTY SHARDS (lower common) : " + faultyPages.size());
 
 			waitingTasks[2] = executorService.submit(new Callable<List<Integer>>() {
 				@Override
@@ -316,7 +308,7 @@ public class ShardedStateManager extends DurableStateManager {
 
 					ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState) upperState).getReplicaID());
 					MerkleTree mt = state.getMerkleTree();
-					List<TreeNode> nodes = mt.getLeafs();
+					HashMap<Integer, TreeNode> nodes = mt.getLeafs();
 
 					byte[] data = upperState.getSerializedState();
 					System.out.println("UPPER STATE DATA : " + data);
@@ -356,7 +348,6 @@ public class ShardedStateManager extends DurableStateManager {
 					return faultyPages;
 				}
 			});
-			System.out.println("FAULTY SHARDS (upper common) : " + faultyPages.size());
 
 			waitingTasks[0] = executorService.submit(new Callable<List<Integer>>() {
 				@Override
@@ -372,7 +363,7 @@ public class ShardedStateManager extends DurableStateManager {
 
 					ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState) chkpntState).getReplicaID());
 					MerkleTree mt = state.getMerkleTree();
-					List<TreeNode> nodes = mt.getLeafs();
+					HashMap<Integer, TreeNode> nodes = mt.getLeafs();
 
 					byte[] data = chkpntState.getSerializedState();
 
@@ -415,8 +406,6 @@ public class ShardedStateManager extends DurableStateManager {
 
 			});
 
-			System.out.println("FAULTY SHARDS (noncommon + all prev) : " + faultyPages.size());
-
 			 try {
 			 faultyPages.addAll(waitingTasks[1].get());
 			 } catch (Exception e) {
@@ -442,7 +431,7 @@ public class ShardedStateManager extends DurableStateManager {
 
 			ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState) chkpntState).getReplicaID());
 			MerkleTree mt = state.getMerkleTree();
-			List<TreeNode> nodes = mt.getLeafs();
+			HashMap<Integer, TreeNode> nodes = mt.getLeafs();
 			byte[] data = ((ShardedCSTState) chkpntState).getSerializedState();
 
 			Integer[] shards = this.shardedCSTConfig.getNonCommonShards();
@@ -462,7 +451,6 @@ public class ShardedStateManager extends DurableStateManager {
 					faultyPages.add(shards[i]);
 				}
 			}
-			System.out.println("FAULTY SHARDS (non common) : " + faultyPages.size());
 			shards = this.shardedCSTConfig.getCommonShards();
 
 			state = firstReceivedStates.get(((ShardedCSTState) lowerState).getReplicaID());
