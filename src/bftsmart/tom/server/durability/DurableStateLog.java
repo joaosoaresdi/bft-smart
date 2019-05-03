@@ -378,7 +378,8 @@ public class DurableStateLog extends StateLog {
             int lastCIDInState = lastCheckpointCID + cstRequest.getLogUpperSize();
 //            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
             if(TOMConfiguration.staticLoad().simulateFault()) {
-            	data[0] = 123;
+            	if(data.length != 0)
+            		data[0] = 123;
 	            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
 	            return cstState;
             }
