@@ -273,7 +273,8 @@ public class ShardedStateManager extends DurableStateManager {
 
     				Integer[] shards = shardedCSTConfig.getCommonShards();
     	    		int comm_count = third - nonCommon_size;
-    	    		for(int i = 0;i < comm_count; i++) {
+    	    		int count = 0;
+    	    		for(int i = 0;i < comm_count; i++, count++) {
 		    			try {
 	    	    			md.update(data, i*shardSize, shardSize);
 		    			} catch (Exception e) {
@@ -287,12 +288,12 @@ public class ShardedStateManager extends DurableStateManager {
     	    		}
     	    		
     				shards = shardedCSTConfig.getNonCommonShards();
-    	    		for(int i = 0;i < noncommonShards.length; i++) {
+    	    		for(int i = 0;i < noncommonShards.length; i++, count++) {
 		    			try {
 		    				int len = shardSize;
-		    				if(((comm_count+i+1)*shardSize) > data.length)
-		    					len = data.length - ((comm_count+i) * shardSize);
-		    				md.update(data, (comm_count+i) * shardSize, len);
+		    				if(((count+1)*shardSize) > data.length)
+		    					len = data.length - (count*shardSize);
+		    				md.update(data, count * shardSize, len);
 		    			} catch (Exception e) {
 		    				e.printStackTrace();
 		    				md.reset();
@@ -373,6 +374,7 @@ public class ShardedStateManager extends DurableStateManager {
     				List<TreeNode> nodes = mt.getLeafs();
     				
     				byte[] data = upperState.getSerializedState();
+    				System.out.println("UPPER STATE DATA : " + data);
 
     				Integer[] shards = shardedCSTConfig.getCommonShards();
     	    		int comm_count = third - nonCommon_size;
@@ -388,7 +390,7 @@ public class ShardedStateManager extends DurableStateManager {
 		    				int len = shardSize;
 			    			try {
 			    				if(((count+1)*shardSize) > data.length)
-			    					len = data.length - ((comm_count+count) * shardSize);
+			    					len = data.length - (count * shardSize);
 		    	    			md.update(data, count * shardSize, len);
 			    			} catch (Exception e) {
 			    				e.printStackTrace();
