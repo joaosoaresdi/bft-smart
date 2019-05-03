@@ -252,64 +252,6 @@ public class ShardedStateManager extends DurableStateManager {
 		
     	if(nonCommon_size < third) {
 //    		Future<List<Integer>>[] waitingTasks = new Future[3];
-//    		waitingTasks[0] = executorService.submit(new Callable<List<Integer>>() {
-//    			@Override
-//    			public List<Integer> call() throws Exception {
-    		{
-    				MessageDigest md = null;
-    				try {
-    					md = MessageDigest.getInstance(shardedCSTConfig.hashAlgo);
-    				} catch (NoSuchAlgorithmException e) {
-    					e.printStackTrace();
-    				}
-
-//    				List<Integer> faultyPages = new LinkedList<>();
-
-    				ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)chkpntState).getReplicaID());
-    				MerkleTree mt = state.getMerkleTree();
-    				List<TreeNode> nodes = mt.getLeafs();
-    				
-    				byte[] data = chkpntState.getSerializedState();
-
-    				Integer[] shards = shardedCSTConfig.getCommonShards();
-    	    		int comm_count = third - nonCommon_size;
-    	    		int count = 0;
-    	    		for(int i = 0;i < comm_count; i++, count++) {
-		    			try {
-	    	    			md.update(data, i*shardSize, shardSize);
-		    			} catch (Exception e) {
-		    				e.printStackTrace();
-		    				md.reset();
-		    			}
-    					if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
-    						logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
-    						faultyPages.add(shards[i]);
-    					}
-    	    		}
-    	    		
-    				shards = shardedCSTConfig.getNonCommonShards();
-    	    		for(int i = 0;i < noncommonShards.length; i++, count++) {
-		    			try {
-		    				int len = shardSize;
-		    				if(((count+1)*shardSize) > data.length)
-		    					len = data.length - (count*shardSize);
-		    				md.update(data, count * shardSize, len);
-		    			} catch (Exception e) {
-		    				e.printStackTrace();
-		    				md.reset();
-		    			}
-
-    					if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
-    						logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
-    						faultyPages.add(shards[i]);
-    					}
-    	    		}
-
-//    				return faultyPages;
-    			}
-    			
-//    		});
-
 //    		waitingTasks[1] = executorService.submit(new Callable<List<Integer>>() {
 //    			@Override
 //    			public List<Integer> call() throws Exception {
@@ -412,7 +354,65 @@ public class ShardedStateManager extends DurableStateManager {
 //    	    		return faultyPages;
     			}
 //    		});
-    		
+
+//	waitingTasks[0] = executorService.submit(new Callable<List<Integer>>() {
+//	@Override
+//	public List<Integer> call() throws Exception {
+{
+		MessageDigest md = null;
+		try {
+			md = MessageDigest.getInstance(shardedCSTConfig.hashAlgo);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+
+//		List<Integer> faultyPages = new LinkedList<>();
+
+		ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)chkpntState).getReplicaID());
+		MerkleTree mt = state.getMerkleTree();
+		List<TreeNode> nodes = mt.getLeafs();
+		
+		byte[] data = chkpntState.getSerializedState();
+
+		Integer[] shards = shardedCSTConfig.getCommonShards();
+		int comm_count = third - nonCommon_size;
+		int count = 0;
+		for(int i = 0;i < comm_count; i++, count++) {
+			try {
+    			md.update(data, i*shardSize, shardSize);
+			} catch (Exception e) {
+				e.printStackTrace();
+				md.reset();
+			}
+			if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
+				logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
+				faultyPages.add(shards[i]);
+			}
+		}
+		
+		shards = shardedCSTConfig.getNonCommonShards();
+		for(int i = 0;i < noncommonShards.length; i++, count++) {
+			try {
+				int len = shardSize;
+				if(((count+1)*shardSize) > data.length)
+					len = data.length - (count*shardSize);
+				md.update(data, count * shardSize, len);
+			} catch (Exception e) {
+				e.printStackTrace();
+				md.reset();
+			}
+
+			if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
+				logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
+				faultyPages.add(shards[i]);
+			}
+		}
+
+//		return faultyPages;
+	}
+	
+//});
+
 //        	try {
 //				faultyPages.addAll(waitingTasks[0].get());
 //			} catch (Exception e) {
@@ -442,10 +442,14 @@ public class ShardedStateManager extends DurableStateManager {
 			MerkleTree mt = state.getMerkleTree();
 			List<TreeNode> nodes = mt.getLeafs();
 			byte[] data = ((ShardedCSTState)chkpntState).getSerializedState();
+			
 			Integer[] shards = this.shardedCSTConfig.getNonCommonShards();
 			for(int i = 0; i < shards.length; i++) {
     			try {
-	    			md.update(data, i * shardSize, shardSize);
+    				int len = shardSize;
+    				if(((i+1)*shardSize)>data.length)
+    					len = data.length - (i*shardSize);
+	    			md.update(data, i * shardSize, len);
     			} catch (Exception e) {
 	    				e.printStackTrace();
     			}
@@ -455,7 +459,7 @@ public class ShardedStateManager extends DurableStateManager {
 					faultyPages.add(shards[i]);
 				}
 			}
-	
+			System.out.println("FAULTY SHARDS (non common) : " + faultyPages.size());
 			shards = this.shardedCSTConfig.getCommonShards();
 
 			state = firstReceivedStates.get(((ShardedCSTState)lowerState).getReplicaID());
@@ -477,7 +481,7 @@ public class ShardedStateManager extends DurableStateManager {
 	    				e.printStackTrace();
     			}
 
-				if(!Arrays.equals(md.digest(), nodes.get(i).digest())) {
+				if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
 //					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
 					faultyPages.add(shards[i]);
 				}
