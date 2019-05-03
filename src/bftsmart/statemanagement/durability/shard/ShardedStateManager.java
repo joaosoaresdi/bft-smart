@@ -296,7 +296,8 @@ public class ShardedStateManager extends DurableStateManager {
 
     			}
 //    		});
-    		
+		System.out.println("FAULTY SHARDS (lower common) : " + faultyPages.size());
+
 //    		waitingTasks[2] = executorService.submit(new Callable<List<Integer>>() {
 //    			@Override
 //    			public List<Integer> call() throws Exception {
@@ -354,6 +355,7 @@ public class ShardedStateManager extends DurableStateManager {
 //    	    		return faultyPages;
     			}
 //    		});
+	System.out.println("FAULTY SHARDS (upper common) : " + faultyPages.size());
 
 //	waitingTasks[0] = executorService.submit(new Callable<List<Integer>>() {
 //	@Override
@@ -411,6 +413,8 @@ public class ShardedStateManager extends DurableStateManager {
 //		return faultyPages;
 	}
 	
+System.out.println("FAULTY SHARDS (noncommon + all prev) : " + faultyPages.size());
+
 //});
 
 //        	try {
