@@ -385,14 +385,14 @@ public class ShardedStateManager extends DurableStateManager {
 			    				int len = shardSize;
 			    				if(((i+1)*shardSize) > data.length)
 			    					len = data.length - ((comm_count+i) * shardSize);
-		    	    			md.update(data, i * shardSize, len);
+		    	    			md.update(data, count * shardSize, len);
 			    			} catch (Exception e) {
 			    				e.printStackTrace();
 			    				md.reset();
 			    			}
 			    						    			
 	    					if(!Arrays.equals(md.digest(), nodes.get(count).digest())) {
-	    						logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
+//	    						logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
 	    						faultyPages.add(shards[i]);
 	    					}
     	    			}
