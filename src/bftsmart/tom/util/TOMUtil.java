@@ -228,6 +228,7 @@ public class TOMUtil {
         return result;
     }
     
+    //added by JSoares
     public static final byte[] computeShardedHash(byte[] data) {        
         try {
             MessageDigest md = getHashEngine();            

@@ -229,6 +229,7 @@ public class ShardedStateManager extends DurableStateManager {
 
 	private Integer[] detectFaultyShards(CSTState lowerState, CSTState upperState, CSTState chkpntState) {
 		logger.debug("detecting faulty shards");
+		
 		stateTransferEndTime = System.currentTimeMillis();								
 		System.out.println("State Transfer process BEFORE DETECT FAULTY SHARDS!");
 		System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
@@ -244,16 +245,17 @@ public class ShardedStateManager extends DurableStateManager {
         
         int third = (nonCommon_size+common_size)/3;
 
-        System.out.println("detecting faulty shards");
-		System.out.println("noncommonShards : " + noncommonShards.length);
-		System.out.println("commonShards : " + commonShards.length);
-		System.out.println("Third : " + third);
+        logger.debug("detecting faulty shards");
+        logger.debug("noncommonShards : " + noncommonShards.length);
+        logger.debug("commonShards : " + commonShards.length);
+        logger.debug("Third : " + third);
 		
     	if(nonCommon_size < third) {
-    		Future<List<Integer>>[] waitingTasks = new Future[3];
-    		waitingTasks[0] = executorService.submit(new Callable<List<Integer>>() {
-    			@Override
-    			public List<Integer> call() throws Exception {
+//    		Future<List<Integer>>[] waitingTasks = new Future[3];
+//    		waitingTasks[0] = executorService.submit(new Callable<List<Integer>>() {
+//    			@Override
+//    			public List<Integer> call() throws Exception {
+    		{
     				MessageDigest md = null;
     				try {
     					md = MessageDigest.getInstance(shardedCSTConfig.hashAlgo);
@@ -261,7 +263,7 @@ public class ShardedStateManager extends DurableStateManager {
     					e.printStackTrace();
     				}
 
-    				List<Integer> faultyPages = new LinkedList<>();
+//    				List<Integer> faultyPages = new LinkedList<>();
 
     				ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)chkpntState).getReplicaID());
     				MerkleTree mt = state.getMerkleTree();
@@ -302,14 +304,15 @@ public class ShardedStateManager extends DurableStateManager {
     					}
     	    		}
 
-    				return faultyPages;
+//    				return faultyPages;
     			}
     			
-    		});
+//    		});
 
-    		waitingTasks[1] = executorService.submit(new Callable<List<Integer>>() {
-    			@Override
-    			public List<Integer> call() throws Exception {
+//    		waitingTasks[1] = executorService.submit(new Callable<List<Integer>>() {
+//    			@Override
+//    			public List<Integer> call() throws Exception {
+    	{
     				MessageDigest md = null;
     				try {
     					md = MessageDigest.getInstance(shardedCSTConfig.hashAlgo);
@@ -317,7 +320,7 @@ public class ShardedStateManager extends DurableStateManager {
     					e.printStackTrace();
     				}
 
-    				List<Integer> faultyPages = new LinkedList<>();
+//    				List<Integer> faultyPages = new LinkedList<>();
 
     				ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)lowerState).getReplicaID());
     				MerkleTree mt = state.getMerkleTree();
@@ -340,17 +343,17 @@ public class ShardedStateManager extends DurableStateManager {
     					if(!Arrays.equals(md.digest(), nodes.get(count).digest())) {
     						logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
     						faultyPages.add(shards[i]);
-    						break;
     					}
     	    		}
-    	    		return faultyPages;
+//    	    		return faultyPages;
 
     			}
-    		});
+//    		});
     		
-    		waitingTasks[2] = executorService.submit(new Callable<List<Integer>>() {
-    			@Override
-    			public List<Integer> call() throws Exception {
+//    		waitingTasks[2] = executorService.submit(new Callable<List<Integer>>() {
+//    			@Override
+//    			public List<Integer> call() throws Exception {
+	{
     				MessageDigest md = null;
     				try {
     					md = MessageDigest.getInstance(shardedCSTConfig.hashAlgo);
@@ -359,7 +362,7 @@ public class ShardedStateManager extends DurableStateManager {
     				}
 
     	    		//upperLog
-    				List<Integer> faultyPages = new LinkedList<>();
+//    				List<Integer> faultyPages = new LinkedList<>();
 
     				ShardedCSTState state = firstReceivedStates.get(((ShardedCSTState)upperState).getReplicaID());
     				MerkleTree mt = state.getMerkleTree();
@@ -374,7 +377,7 @@ public class ShardedStateManager extends DurableStateManager {
     	    		int count = 0;
     	    		for(int i = (comm_count+third) ; i < (comm_count+third+size) ; i++, count++) {
     	    			if(data == null) {
-    	    				System.out.println("NULL DATA SHARD : " + shards[i]);
+//    	    				System.out.println("NULL DATA SHARD : " + shards[i]);
     						faultyPages.add(shards[i]);
     	    			}
     	    			else {
@@ -391,30 +394,29 @@ public class ShardedStateManager extends DurableStateManager {
 	    					if(!Arrays.equals(md.digest(), nodes.get(count).digest())) {
 	    						logger.debug("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
 	    						faultyPages.add(shards[i]);
-	    						break;
 	    					}
     	    			}
     	    		}
 
-    	    		return faultyPages;
+//    	    		return faultyPages;
     			}
-    		});
+//    		});
     		
-        	try {
-				faultyPages.addAll(waitingTasks[0].get());
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-        	try {
-				faultyPages.addAll(waitingTasks[1].get());
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-        	try {
-				faultyPages.addAll(waitingTasks[2].get());
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+//        	try {
+//				faultyPages.addAll(waitingTasks[0].get());
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//        	try {
+//				faultyPages.addAll(waitingTasks[1].get());
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//        	try {
+//				faultyPages.addAll(waitingTasks[2].get());
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
     	}
     	else {
     		MessageDigest md = null;
@@ -501,11 +503,15 @@ public class ShardedStateManager extends DurableStateManager {
 	//this can be paralellized easily since there are no races
 	ExecutorService executorService = Executors.newFixedThreadPool(3);
 	Future<Boolean>[] waitingTasks = new Future[3];
+
+	LogRebuilder lowerLogRebuilder = new LogRebuilder(null, null, 0, 0, 0, null);
+	LogRebuilder upperLogRebuilder = new LogRebuilder(null, null, 0, 0, 0, null);
+	ChkpntRebuilder chkpntRebuilder = new ChkpntRebuilder(null, null, 0, 0, 0, null, null, null);
 	
 	private ShardedCSTState rebuildCSTState(CSTState logLowerState, CSTState logUpperState, CSTState chkPntState) {
 		logger.debug("rebuilding state");
 
-		//TODO: current state should be copied directly into chkpntData
+		//TODO: current state should be copied directly imnto chkpntData
 		// REMOVED SINCE IM NOT TREATING PREVIOUS EXISTING STATE
 //		byte[] currState = dt.getRecoverer().getState(this.lastCID, true).getSerializedState();
 //		if(currState != null) {
@@ -541,10 +547,11 @@ public class ShardedStateManager extends DurableStateManager {
 		byte[] chkpntSer = chkPntState.getSerializedState();
 
 		if(nonCommon_size < third) {
+			
     		int comm_count = third - nonCommon_size;
     		
     		//when sorted shards
-    		//common chkpnt
+    		//common chkpnt    		
     		waitingTasks[0] = executorService.submit(new Callable<Boolean>() {
     			@Override
     			public Boolean call() throws Exception {
@@ -585,6 +592,7 @@ public class ShardedStateManager extends DurableStateManager {
     			}
     			
     		});
+    		
     		//common upperlog
     		waitingTasks[2] = executorService.submit(new Callable<Boolean>() {
     			@Override
@@ -680,7 +688,36 @@ public class ShardedStateManager extends DurableStateManager {
     			half = ((common_size+1)/2);
     		else 
     			half = (common_size/2);
-
+    		
+    		chkpntRebuilder.setFrom(chkpntSer);
+    		chkpntRebuilder.setTo(statePlusLower.state);
+    		chkpntRebuilder.setStart(0);
+    		chkpntRebuilder.setEnd(0);
+    		chkpntRebuilder.setShards(commonShards);
+    		chkpntRebuilder.setShardSize(shardSize);
+    		chkpntRebuilder.setNoncommonShards(noncommonShards);
+    		
+    		waitingTasks[0] = executorService.submit(chkpntRebuilder);
+    		
+    		lowerLogRebuilder.setFrom(logLowerSer);
+    		lowerLogRebuilder.setTo(statePlusLower.state);
+    		lowerLogRebuilder.setStart(0);
+    		lowerLogRebuilder.setEnd(half);
+    		lowerLogRebuilder.setShards(commonShards);
+    		lowerLogRebuilder.setShardSize(shardSize);
+    		
+    		waitingTasks[1] = executorService.submit(lowerLogRebuilder);
+    		
+    		upperLogRebuilder.setFrom(logUpperSer);
+    		upperLogRebuilder.setTo(statePlusLower.state);
+    		upperLogRebuilder.setStart(half);
+    		upperLogRebuilder.setEnd(commonShards.length);
+    		upperLogRebuilder.setShards(commonShards);
+    		upperLogRebuilder.setShardSize(shardSize);
+    		
+    		waitingTasks[2] = executorService.submit(upperLogRebuilder);
+    		
+    		/*
     		waitingTasks[0] = executorService.submit(new Callable<Boolean>() {
     			@Override
     			public Boolean call() throws Exception {
@@ -728,7 +765,7 @@ public class ShardedStateManager extends DurableStateManager {
     				return true;
     			}
     		});
-
+			*/
     		
     	}
 		try {
@@ -1130,9 +1167,165 @@ public class ShardedStateManager extends DurableStateManager {
 		if(full) {
 			firstReceivedStates.clear();
 			statePlusLower = null;
-			this.chkpntState = null;
+			chkpntState = null;
 			stateLower.set(null);
 			stateUpper.set(null);
 		}
 	}
 }
+
+abstract class Rebuilder {
+	byte[] from;
+	byte[] to;
+	int shardSize;
+	
+	Rebuilder(byte[] from, byte[] to, int shardSize) {
+		this.from = from;
+		this.to = to;
+		this.shardSize = shardSize;
+	}
+
+	public byte[] getFrom() {
+		return from;
+	}
+
+	public byte[] getTo() {
+		return to;
+	}
+
+	public int getShardSize() {
+		return shardSize;
+	}
+
+	public void setFrom(byte[] from) {
+		this.from = from;
+	}
+
+	public void setTo(byte[] to) {
+		this.to = to;
+	}
+
+	public void setShardSize(int shardSize) {
+		this.shardSize = shardSize;
+	}
+	
+}
+
+class LogRebuilder  extends Rebuilder implements Callable<Boolean>{
+	int start;
+	int end;
+	Integer[] shards;
+	
+	LogRebuilder (byte[] from, byte[] to, int shardSize, int start, int end, Integer[] shards) {
+		super(from, to, shardSize);
+		this.start = start;
+		this.end = end;
+		this.shards = shards;
+	}
+	
+	public int getStart() {
+		return start;
+	}
+
+	public int getEnd() {
+		return end;
+	}
+
+	public Integer[] getShards() {
+		return shards;
+	}
+
+	public void setStart(int start) {
+		this.start = start;
+	}
+
+	public void setEnd(int end) {
+		this.end = end;
+	}
+
+	public void setShards(Integer[] shards) {
+		this.shards = shards;
+	}
+
+	// from upperLog & lowerLog
+	public Boolean call() throws Exception {
+		int count = 0;
+		for(int i = start;i < end; i++, count++) {
+			try {
+				System.arraycopy(from, count*shardSize, to, shards[i]*shardSize, shardSize);
+			} catch (Exception e) {
+				e.printStackTrace();
+//				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+			}
+		}
+		return true;
+	}
+}
+
+
+class ChkpntRebuilder  extends LogRebuilder implements Callable<Boolean> {
+	byte[] noncommonData;
+	Integer[] noncommonShards;
+	
+	ChkpntRebuilder (byte[] from, byte[] to, int shardSize, int start, int end, Integer[] shards, byte[] noncommonData, Integer[] noncommonShards) {
+		super(from, to, shardSize, start, end, shards);
+		this.noncommonData = noncommonData;
+		this.noncommonShards = noncommonShards;
+	}
+
+	public byte[] getNoncommonData() {
+		return noncommonData;
+	}
+
+	public Integer[] getNoncommonShards() {
+		return noncommonShards;
+	}
+
+	public void setNoncommonData(byte[] noncommonData) {
+		this.noncommonData = noncommonData;
+	}
+
+	public void setNoncommonShards(Integer[] noncommonShards) {
+		this.noncommonShards = noncommonShards;
+	}
+
+	public Boolean call() throws Exception {
+		int count = 0;
+		//common lowerlog
+		for(int i = start; i < end; i++, count++) {
+			try {
+				System.arraycopy(from, count*shardSize, to, shards[i]*shardSize, shardSize);
+			} catch (Exception e) {
+				e.printStackTrace();
+//				logger.error("Error rebuilding state. IGNORING IT FOR NOW");
+			}
+		}
+		
+		for(int i = 0;i < noncommonShards.length; i++, count++) {
+			try {
+				System.arraycopy(from, count*shardSize, to, noncommonShards[i]*shardSize, shardSize);
+			} catch (Exception e) {
+				e.printStackTrace();
+//				logger.error("Error copying received shard during state rebuild. IGNORING IT FOR NOW");
+			}
+		}
+		return true;
+	}
+}
+
+//
+//waitingTasks[1] = executorService.submit(new Callable<Boolean>() {
+//	@Override
+//	public Boolean call() throws Exception {
+//		//common upperlog
+//		for(int i = half;i < commonShards.length; i++) {
+//			try {
+//				System.arraycopy(logUpperSer, (i-half)*shardSize, statePlusLower.state, commonShards[i]*shardSize, shardSize);
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//				logger.error("Error copying shard during state rebuild. IGNORING IT FOR NOW");
+//			}
+//		}
+//		return true;
+//	}
+//
