@@ -707,7 +707,13 @@ public class ShardedStateManager extends DurableStateManager {
     		chkpntRebuilder.setShardSize(shardSize);
     		chkpntRebuilder.setNoncommonShards(noncommonShards);
     		
-    		waitingTasks[0] = executorService.submit(chkpntRebuilder);
+    		try {
+				chkpntRebuilder.call();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    		
+//    		waitingTasks[0] = executorService.submit(chkpntRebuilder);
     		
     		lowerLogRebuilder.setFrom(logLowerSer);
     		lowerLogRebuilder.setTo(statePlusLower.state);
@@ -716,7 +722,13 @@ public class ShardedStateManager extends DurableStateManager {
     		lowerLogRebuilder.setShards(commonShards);
     		lowerLogRebuilder.setShardSize(shardSize);
     		
-    		waitingTasks[1] = executorService.submit(lowerLogRebuilder);
+    		try {
+				lowerLogRebuilder.call();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+//    		waitingTasks[1] = executorService.submit(lowerLogRebuilder);
     		
     		upperLogRebuilder.setFrom(logUpperSer);
     		upperLogRebuilder.setTo(statePlusLower.state);
@@ -725,7 +737,13 @@ public class ShardedStateManager extends DurableStateManager {
     		upperLogRebuilder.setShards(commonShards);
     		upperLogRebuilder.setShardSize(shardSize);
     		
-    		waitingTasks[2] = executorService.submit(upperLogRebuilder);
+    		try {
+				upperLogRebuilder.call();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+//    		waitingTasks[2] = executorService.submit(upperLogRebuilder);
     		
     		/*
     		waitingTasks[0] = executorService.submit(new Callable<Boolean>() {
@@ -778,21 +796,21 @@ public class ShardedStateManager extends DurableStateManager {
 			*/
     		
     	}
-		try {
-			while(!waitingTasks[0].get());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		try {
-			while(!waitingTasks[1].get());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		try {
-			while(!waitingTasks[2].get());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+//		try {
+//			while(!waitingTasks[0].get());
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//		try {
+//			while(!waitingTasks[1].get());
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//		try {
+//			while(!waitingTasks[2].get());
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
 		statePlusLower.setStateHash(TOMUtil.computeShardedHash(statePlusLower.state));
 		return statePlusLower;
 	}
