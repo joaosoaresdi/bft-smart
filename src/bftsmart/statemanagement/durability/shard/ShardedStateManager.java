@@ -440,7 +440,7 @@ public class ShardedStateManager extends DurableStateManager {
     			}
 
 				if(!Arrays.equals(md.digest(), nodes.get(shards[i]).digest())) {
-					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
+//					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
 					faultyPages.add(shards[i]);
 				}
 			}
@@ -467,7 +467,7 @@ public class ShardedStateManager extends DurableStateManager {
     			}
 
 				if(!Arrays.equals(md.digest(), nodes.get(i).digest())) {
-					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
+//					logger.info("Faulty shard detected {} from Replica {}", shards[i], state.getReplicaID());
 					faultyPages.add(shards[i]);
 				}
 			}
@@ -486,13 +486,14 @@ public class ShardedStateManager extends DurableStateManager {
     			}
 
 				if(!Arrays.equals(md.digest(), nodes.get(half+i).digest())) {
-					logger.info("Faulty shard detected {} from Replica {}", shards[half+i], state.getReplicaID());
+//					logger.info("Faulty shard detected {} from Replica {}", shards[half+i], state.getReplicaID());
 					faultyPages.add(shards[half+i]);
 				}
 			}
 
     	}
 		Integer[] ret = faultyPages.toArray(new Integer[0]);
+		System.out.println("FAULT SHARDS : " + Arrays.toString(ret));
 		stateTransferEndTime = System.currentTimeMillis();								
 		System.out.println("State Transfer process AFTER DETECT FAULTY SHARDS!");
 		System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
@@ -559,7 +560,7 @@ public class ShardedStateManager extends DurableStateManager {
 	    				System.arraycopy(chkpntSer, 0, statePlusLower.state, commonShards[0]*shardSize, shardSize);
 	    				System.arraycopy(chkpntSer, shardSize, statePlusLower.state, commonShards[1]*shardSize, (comm_count-1)*shardSize);
     				}catch (Exception e) {
-    					e.printStackTrace();
+//    					e.printStackTrace();
         				logger.error("Error rebuilding state. IGNORING IT FOR NOW");
     				}
 
@@ -568,7 +569,7 @@ public class ShardedStateManager extends DurableStateManager {
 	        			try {
 	        				System.arraycopy(chkpntSer, (comm_count+i)*shardSize, statePlusLower.state, noncommonShards[i]*shardSize, shardSize);
 	        			} catch (Exception e) {
-	        				e.printStackTrace();
+//	        				e.printStackTrace();
 	        				logger.error("Error rebuilding state. IGNORING IT FOR NOW");
 	        			}
 	        		}
@@ -585,7 +586,7 @@ public class ShardedStateManager extends DurableStateManager {
     				try {
     					System.arraycopy(logLowerSer, 0, statePlusLower.state, commonShards[comm_count]*shardSize, (third)*shardSize);
     				}catch (Exception e) {
-    					e.printStackTrace();
+//    					e.printStackTrace();
         				logger.error("Error rebuilding state. IGNORING IT FOR NOW");
     				}
     				return true;
@@ -601,7 +602,7 @@ public class ShardedStateManager extends DurableStateManager {
     				try {
     					System.arraycopy(logUpperSer, 0, statePlusLower.state, commonShards[comm_count+third]*shardSize, logUpperSer.length);
     				}catch (Exception e) {
-    					e.printStackTrace();
+//    					e.printStackTrace();
         				logger.error("Error rebuilding state. IGNORING IT FOR NOW");
     				}
     				return true;
