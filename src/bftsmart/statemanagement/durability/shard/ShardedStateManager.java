@@ -381,14 +381,19 @@ public class ShardedStateManager extends DurableStateManager {
     						faultyPages.add(shards[i]);
     	    			}
     	    			else {
+		    				int len = shardSize;
 			    			try {
-			    				int len = shardSize;
 			    				if(((i+1)*shardSize) > data.length)
 			    					len = data.length - ((comm_count+i) * shardSize);
 		    	    			md.update(data, count * shardSize, len);
 			    			} catch (Exception e) {
 			    				e.printStackTrace();
 			    				md.reset();
+			    				System.out.println(i);
+			    				System.out.println(data.length);
+			    				System.out.println(count);
+			    				System.out.println(count * shardSize);
+			    				System.out.println(len);
 			    			}
 			    						    			
 	    					if(!Arrays.equals(md.digest(), nodes.get(count).digest())) {
