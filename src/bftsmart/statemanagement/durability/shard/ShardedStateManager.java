@@ -499,7 +499,6 @@ public class ShardedStateManager extends DurableStateManager {
 
 		}
 		Integer[] ret = faultyPages.toArray(new Integer[0]);
-		System.out.println("FAULT SHARDS : " + Arrays.toString(ret));
 		stateTransferEndTime = System.currentTimeMillis();
 		System.out.println("State Transfer process AFTER DETECT FAULTY SHARDS!");
 		System.out.println("Time: \t" + (stateTransferEndTime - stateTransferStartTime));
@@ -890,9 +889,9 @@ public class ShardedStateManager extends DurableStateManager {
 								// dt.getRecoverer()).getCurrentStateHash();
 								byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer())
 										.getCurrentShardedStateHash();
-								logger.debug("Current state Hash: " + Arrays.toString(currentStateHash));
-								logger.debug("Expectet state Hash (upper state chkpnt hash): "
-										+ Arrays.toString(upperState.getCheckpointHash()));
+//								logger.debug("Current state Hash: " + Arrays.toString(currentStateHash));
+//								logger.debug("Expected state Hash (upper state chkpnt hash): "
+//										+ Arrays.toString(upperState.getCheckpointHash()));
 
 								if (!Arrays.equals(currentStateHash, upperState.getCheckpointHash())) {
 									logger.debug("INVALID Checkpoint + Lower Log hash");
