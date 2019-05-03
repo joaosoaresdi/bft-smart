@@ -264,9 +264,9 @@ public class DurableStateLog extends StateLog {
 			half = (common_size/2);
         
 		int comm_count = third - nonCommon_size;
-		System.out.println("THIRD : " + third);
-		System.out.println("HALF : " + half);
-		System.out.println("comm_count : " + comm_count);
+//		System.out.println("THIRD : " + third);
+//		System.out.println("HALF : " + half);
+//		System.out.println("comm_count : " + comm_count);
 
 		if(id == cstRequest.getCheckpointReplica()) {
             // This replica is expected to send the checkpoint plus the hashes of lower and upper log portions
@@ -378,7 +378,8 @@ public class DurableStateLog extends StateLog {
             int lastCIDInState = lastCheckpointCID + cstRequest.getLogUpperSize();
 //            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
             if(TOMConfiguration.staticLoad().simulateFault()) {
-	            ShardedCSTState cstState = new ShardedCSTState(new byte[data.length], ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+            	data[0] = 123;
+	            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
 	            return cstState;
             }
             else  {
