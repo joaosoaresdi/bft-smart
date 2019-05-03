@@ -2,8 +2,6 @@ package bftsmart.statemanagement.durability.shard;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import bftsmart.statemanagement.durability.CSTRequestF1;
@@ -16,9 +14,9 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 	protected Integer[] commonShards;
 	protected Integer[] nonCommonShards;
 	
-//	private int[] upperReps;
-//	private int[] lowerReps;
-//	private int[] checkpointReps;
+	private int[] upperReps;
+	private int[] lowerReps;
+	private int[] checkpointReps;
 
 	protected int shardCount; // total number of chkpnt shards
 	protected String hashAlgo;
@@ -78,13 +76,48 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 	public int getShardSize() {
 		return shardSize;
 	}
+	
+	public int inCheckpointReplicas(int id) {
+		for(int i = 0; i < checkpointReps.length; i++) {
+			if(checkpointReps[i] == id)
+				return i;
+		}
+		return -1;
+	}
+
+	public int inLowerLogReplicas(int id) {
+		for(int i = 0; i < lowerReps.length; i++) {
+			if(lowerReps[i] == id)
+				return i;
+		}
+		return -1;
+	}
+
+	public int inUpperLogReplicas(int id) {
+		for(int i = 0; i < upperReps.length; i++) {
+			if(upperReps[i] == id)
+				return i;
+		}
+		return -1;
+	}
+
+	public int[] getUpperReplicas() {
+		return upperReps;
+	}
+
+	public int[] getLowerReplicas() {
+		return lowerReps;
+	}
+
+	public int[] getCheckpointReplicas() {
+		return checkpointReps;
+	}
 
 	/*
 	 * logLower sends first half of common shards/chunks/pages logUpper sends second
 	 * half of common shards/chunks/pages checkpointReplica sends non-common
 	 * shards/chunks/pages
 	 */
-	/*
 	@Override
 	public void defineReplicas(int[] otherReplicas, int globalCkpPeriod, int me) {
 		int N = otherReplicas.length + 1; // The total number of replicas is the others plus me
@@ -92,11 +125,11 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 		// case of recovering from a crash before the occurrence of a checkpoint
 		// position of the replica with the oldest checkpoint in the others array
 		int oldestReplicaPosition = getOldest(otherReplicas, cid, globalCkpPeriod, me);
+		
 		int repsPerGroup = otherReplicas.length / 3;
 		upperReps = new int[repsPerGroup];
 		lowerReps = new int[repsPerGroup];
 		checkpointReps = new int[repsPerGroup];
-
 		if (cid < globalCkpPeriod) {
 			logUpperSize = cid + 1;
 			for(int i = 0; i < repsPerGroup; i++) {
@@ -114,7 +147,6 @@ public class ShardedCSTRequest extends CSTRequestF1 {
 			}
 		}
 	}
-	*/
 
 	// defines the set of common shards between all replicas and defines which are
 	// assigned to each replica

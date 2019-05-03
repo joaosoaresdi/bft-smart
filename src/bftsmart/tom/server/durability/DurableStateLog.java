@@ -262,13 +262,9 @@ public class DurableStateLog extends StateLog {
 			half = ((common_size+1)/2);
 		else 
 			half = (common_size/2);
-        
 		int comm_count = third - nonCommon_size;
-		System.out.println("THIRD : " + third);
-		System.out.println("HALF : " + half);
-		System.out.println("comm_count : " + comm_count);
 
-		if(id == cstRequest.getCheckpointReplica()) {
+		if(cstRequest.inCheckpointReplicas(id) != -1) {
             // This replica is expected to send the checkpoint plus the hashes of lower and upper log portions
     		checkpointLock.lock();
             byte[] ckpState = fr.getCkpState(lastCkpPath);
@@ -276,8 +272,8 @@ public class DurableStateLog extends StateLog {
 
             byte[] data;
         	if(nonCommon_size < third) {
+        		
         		data = new byte[third*shardSize];
-
     			System.arraycopy(ckpState, commonShards[0]*shardSize, data, 0 , shardSize);
     			System.arraycopy(ckpState, commonShards[1]*shardSize, data, shardSize, (comm_count-1)*shardSize);
 
@@ -318,15 +314,23 @@ public class DurableStateLog extends StateLog {
             
             ShardedCSTState cstState = new ShardedCSTState(data, null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
             return cstState;
-        } else if(id == cstRequest.getLogLower()) {
+        } else if(cstRequest.inLowerLogReplicas(id) != -1) {
             // This replica is expected to send the lower part of the log and a subset of common shards; [0, (length/2)]
     		checkpointLock.lock();
             byte[] ckpState = fr.getCkpState(lastCkpPath);
             checkpointLock.unlock();
             byte[] data;
+
         	if(nonCommon_size < third) {
-                data = new byte[third*shardSize];
-    			System.arraycopy(ckpState, commonShards[comm_count]*shardSize, data, 0, third*shardSize);
+        		// shard count = third
+                int me = cstRequest.inLowerLogReplicas(id);
+                int group_size = cstRequest.getLowerReplicas().length;
+                int len = third/group_size;
+            	if(me == group_size-1) // last part -> remaining shards
+            		len = third-(me*third/group_size);
+            	data = new byte[len*shardSize];
+                
+    			System.arraycopy(ckpState, commonShards[comm_count+(me*third/group_size)]*shardSize, data, 0, len*shardSize);
         	}
         	else {
                 data = new byte[half*shardSize];
@@ -362,29 +366,52 @@ public class DurableStateLog extends StateLog {
         	
             byte[] data;
         	if(nonCommon_size < third) {
+        		
+                int me = cstRequest.inUpperLogReplicas(id);
+                int group_size = cstRequest.getUpperReplicas().length;
+                
         		int start = (comm_count + third);
         		int size = common_size-start;
-                data = new byte[size*shardSize];
-    			System.arraycopy(ckpState, commonShards[start]*shardSize, data, 0 ,size*shardSize);
+        		
+        		int len = size / group_size;
+        		if(me == group_size-1)
+        			len = size + (me*size/group_size);
+        			
+                data = new byte[len*shardSize];
+    			System.arraycopy(ckpState, commonShards[start+(me*size/group_size)]*shardSize, data, 0 ,len*shardSize);
+                CommandsInfo[] logUpper = fr.getLogState(cstRequest.getLogUpperSize(), logPath);
+
+                int lastCIDInState = lastCheckpointCID + cstRequest.getLogUpperSize();
+//                ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+                if(TOMConfiguration.staticLoad().simulateFault()) {
+                	if(me == 0)
+                		return new ShardedCSTState(new byte[data.length], ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+                	else 
+                		return new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+                }
+                else  {
+    	            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+    	            return cstState;
+                }
         	}
         	else {
                 data = new byte[half*shardSize];
         		for(int i = 0;i < half; i++) {
 					System.arraycopy(ckpState, commonShards[i]*shardSize, data, i*shardSize, shardSize);
         		}
-        	}
-            CommandsInfo[] logUpper = fr.getLogState(cstRequest.getLogUpperSize(), logPath);
+                CommandsInfo[] logUpper = fr.getLogState(cstRequest.getLogUpperSize(), logPath);
 
-            int lastCIDInState = lastCheckpointCID + cstRequest.getLogUpperSize();
-//            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
-            if(TOMConfiguration.staticLoad().simulateFault()) {
-	            ShardedCSTState cstState = new ShardedCSTState(new byte[data.length], ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
-	            return cstState;
-            }
-            else  {
-	            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
-	            return cstState;
-            }
+                int lastCIDInState = lastCheckpointCID + cstRequest.getLogUpperSize();
+//                ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+                if(TOMConfiguration.staticLoad().simulateFault()) {
+                		ShardedCSTState cstState = new ShardedCSTState(new byte[data.length], ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+    	            return cstState;
+                }
+                else  {
+    	            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
+    	            return cstState;
+                }
+        	}
         }
     }
 

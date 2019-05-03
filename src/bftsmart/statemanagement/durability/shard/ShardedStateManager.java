@@ -15,7 +15,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -819,7 +818,7 @@ public class ShardedStateManager extends DurableStateManager {
 					stateUpper.set(stateReceived);
 				}
 
-				if (receivedStates.size() == 3) {
+				if (receivedStates.size() == SVController.getCurrentViewOtherAcceptors().length) {
 					if (CSTfence.compareAndSet(false, true)) { // only one enters here
 						lockTimer.lock();
 						// wait for every response of every replica
@@ -1306,20 +1305,3 @@ class ChkpntRebuilder extends LogRebuilder implements Callable<Boolean> {
 		return true;
 	}
 }
-
-//
-//waitingTasks[1] = executorService.submit(new Callable<Boolean>() {
-//	@Override
-//	public Boolean call() throws Exception {
-//		//common upperlog
-//		for(int i = half;i < commonShards.length; i++) {
-//			try {
-//				System.arraycopy(logUpperSer, (i-half)*shardSize, statePlusLower.state, commonShards[i]*shardSize, shardSize);
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//				logger.error("Error copying shard during state rebuild. IGNORING IT FOR NOW");
-//			}
-//		}
-//		return true;
-//	}
-//
