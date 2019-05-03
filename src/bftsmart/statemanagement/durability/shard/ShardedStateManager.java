@@ -1333,7 +1333,6 @@ class ChkpntRebuilder  extends LogRebuilder implements Callable<Boolean> {
 		
 		for(int i = 0;i < noncommonShards.length; i++, count++) {
 			try {
-				System.out.println("Copying Shard " + (count) + " to Shard" + noncommonShards[i]);
 				System.arraycopy(from, count*shardSize, to, noncommonShards[i]*shardSize, shardSize);
 			} catch (Exception e) {
 				e.printStackTrace();
