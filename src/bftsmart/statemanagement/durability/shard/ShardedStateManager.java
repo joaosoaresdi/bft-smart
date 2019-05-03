@@ -552,12 +552,11 @@ public class ShardedStateManager extends DurableStateManager {
         
         int third = (nonCommon_size+common_size)/3;
         
+		byte[] chkpntSer = chkPntState.getSerializedState();
 		byte[] logLowerSer = logLowerState.getSerializedState();
 		byte[] logUpperSer = logUpperState.getSerializedState();
-		byte[] chkpntSer = chkPntState.getSerializedState();
 
 		if(nonCommon_size < third) {
-			
     		int comm_count = third - nonCommon_size;
     		
     		//when sorted shards
@@ -929,6 +928,9 @@ public class ShardedStateManager extends DurableStateManager {
 
 								//byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentStateHash();
 								byte[] currentStateHash = ((DurabilityCoordinator) dt.getRecoverer()).getCurrentShardedStateHash();
+								logger.debug("Current state Hash: " + Arrays.toString(currentStateHash));
+								logger.debug("Expectet state Hash (upper state chkpnt hash): " + Arrays.toString(upperState.getCheckpointHash()));
+
 								if (!Arrays.equals(currentStateHash, upperState.getCheckpointHash())) {
 									logger.debug("INVALID Checkpoint + Lower Log hash"); 
 									validState = false;
@@ -1331,6 +1333,7 @@ class ChkpntRebuilder  extends LogRebuilder implements Callable<Boolean> {
 		
 		for(int i = 0;i < noncommonShards.length; i++, count++) {
 			try {
+				System.out.println("Copying Shard " + (count) + " to Shard" + noncommonShards[i]);
 				System.arraycopy(from, count*shardSize, to, noncommonShards[i]*shardSize, shardSize);
 			} catch (Exception e) {
 				e.printStackTrace();
