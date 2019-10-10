@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Queue;
@@ -104,13 +105,13 @@ public class DurableStateManager extends StateManager {
 
 		TimerTask stateTask = new TimerTask() {
 			public void run() {                
-				CSTSMMessage msg = new CSTSMMessage(-1, waitingCID,TOMUtil.TRIGGER_SM_LOCALLY, null, null, null, -1, -1);
+				CSTSMMessage msg = new CSTSMMessage(-1, waitingCID, TOMUtil.TRIGGER_SM_LOCALLY, null, null, null, -1, -1);
 
 				triggerTimeout(msg);
 			}
 		};
 
-		stateTimer = new Timer("state timer");
+		stateTimer = new Timer("State Transfer Timeout");
 		timeout = timeout * 2;
 		stateTimer.schedule(stateTask, timeout);
 	}
@@ -146,7 +147,7 @@ public class DurableStateManager extends StateManager {
 
 			//modified by JSoares
 			if (stateServer == null) {
-				stateServer = new StateSenderServer(port, dt.getRecoverer(), cstConfig);
+				stateServer = new StateSenderServer(myId, port, dt.getRecoverer(), cstConfig);
 				new Thread(stateServer).start();
 			}
 			else {
@@ -225,10 +226,16 @@ public class DurableStateManager extends StateManager {
 					logger.debug("Opening connection to peer {} to fetch CSTState", address);
 					clientSocket = new Socket(address.getHostName(),
 							address.getPort());
+					
+					// added by JSoares					
+					clientSocket.setSoTimeout(SVController.getStaticConf().getRequestTimeout());
+
 					ObjectInputStream in = new ObjectInputStream(
 							clientSocket.getInputStream());
 					stateReceived = (ApplicationState) in.readObject();
 					clientSocket.close();
+				} catch (SocketTimeoutException e) {
+					logger.error("Peer did not answer in time", e);
 				} catch (UnknownHostException e) {
 					logger.error("Failed to connect to address", e);
 				} catch (IOException e) {
@@ -253,7 +260,7 @@ public class DurableStateManager extends StateManager {
 					}
 				}
 
-				if (receivedStates.size() == 3) {
+				if (this.chkpntState != null && stateLower.get() != null  && stateUpper.get() != null) {
 					boolean validState = false;
 					CommandsInfo[] upperLog = stateUpper.get().getLogUpper();
 					byte[] upperLogHash = CommandsInfo.computeHash(upperLog);

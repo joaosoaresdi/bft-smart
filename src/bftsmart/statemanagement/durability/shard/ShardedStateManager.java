@@ -181,15 +181,14 @@ public class ShardedStateManager extends DurableStateManager {
 
 		TimerTask stateTask = new TimerTask() {
 			public void run() {
-				CSTSMMessage msg = new CSTSMMessage(-1, waitingCID, TOMUtil.TRIGGER_SM_LOCALLY, null, null, null, -1,
-						-1);
+				CSTSMMessage msg = new CSTSMMessage(-1, waitingCID, TOMUtil.TRIGGER_SM_LOCALLY, null, null, null, -1, -1);
 				triggerTimeout(msg);
 			}
 		};
-
-		stateTimer = new Timer("state timer");
-		timeout = timeout * 2;
+		
+		stateTimer = new Timer("State Transfer Timeout");
 		stateTimer.schedule(stateTask, timeout);
+		timeout = timeout * 2;
 	}
 
 	@Override
@@ -208,7 +207,7 @@ public class ShardedStateManager extends DurableStateManager {
 			cstConfig.setAddress(address);
 
 			if (stateServer == null) {
-				stateServer = new StateSenderServer(port, dt.getRecoverer(), cstConfig);
+				stateServer = new StateSenderServer(myId, port, dt.getRecoverer(), cstConfig);
 				new Thread(stateServer).start();
 			} else {
 				stateServer.updateServer(dt.getRecoverer(), cstConfig);
@@ -248,7 +247,8 @@ public class ShardedStateManager extends DurableStateManager {
 		int third = (nonCommon_size + common_size) / 3;
 
 		if (nonCommon_size < third) {
-			Future<List<Integer>>[] waitingTasks = new Future[3];
+			Future<List<Integer>> waitingTasks[] = new Future[3];
+			
 			waitingTasks[1] = executorService.submit(new Callable<List<Integer>>() {
 				@Override
 				public List<Integer> call() throws Exception {
@@ -794,6 +794,10 @@ public class ShardedStateManager extends DurableStateManager {
 				try {
 					logger.debug("Opening connection to peer {} for requesting its Replica State", address);
 					clientSocket = new Socket(address.getHostName(), address.getPort());
+
+					// added by JSoares					
+					clientSocket.setSoTimeout(SVController.getStaticConf().getRequestTimeout());
+
 					ObjectInputStream in = new ObjectInputStream(clientSocket.getInputStream());
 					stateReceived = (ShardedCSTState) in.readObject();
 					in.close();
@@ -801,7 +805,7 @@ public class ShardedStateManager extends DurableStateManager {
 				} catch (Exception e) {
 					e.printStackTrace();
 					logger.error("Failed to transfer state", e);
-					// TODO: flag that the transfer failed for repeating the transfer process
+					
 					return;
 				}
 
@@ -819,22 +823,20 @@ public class ShardedStateManager extends DurableStateManager {
 					stateUpper.set(stateReceived);
 				}
 
-				if (receivedStates.size() == 3) {
+				if (this.chkpntState != null && stateLower.get() != null  && stateUpper.get() != null) {
 					if (CSTfence.compareAndSet(false, true)) { // only one enters here
 						lockTimer.lock();
 						// wait for every response of every replica
 						// should use monitors
 
 						logger.debug("Validating Received State\n");
-						while (stateUpper.get() == null)
-							;
+						while (stateUpper.get() == null);
 						CSTState upperState = stateUpper.get();
 
 						CommandsInfo[] upperLog = upperState.getLogUpper();
 						byte[] upperLogHash = CommandsInfo.computeHash(upperLog);
 
-						while (stateLower.get() == null)
-							;
+						while (stateLower.get() == null);
 						CSTState lowerState = stateLower.get();
 
 						boolean validState = false;
@@ -1086,14 +1088,15 @@ public class ShardedStateManager extends DurableStateManager {
 								Integer[] faultyShards = detectFaultyShards(lowerState, upperState,
 										(CSTState) chkpntState);
 								if (faultyShards.length == 0) {
+									
 									logger.debug("Cannot detect faulty shards. Will restart protocol");
 									reset(true);
 									// firstReceivedStates.clear();
 									// statePlusLower = null;
-									requestState();
 									if (stateTimer != null) {
 										stateTimer.cancel();
 									}
+									requestState();
 								} else {
 									logger.debug("Retrying State Transfer for the {} time", retries);
 

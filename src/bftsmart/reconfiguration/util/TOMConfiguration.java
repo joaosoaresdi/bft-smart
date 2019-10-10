@@ -72,6 +72,8 @@ public class TOMConfiguration extends Configuration {
     private boolean origcst;
     private boolean multithreadedComms;
     private boolean simulateFault;
+    private int faultyShardCount;
+    private int nonReplyingReplicaID;
     
     /** Creates a new instance of TOMConfiguration */
     public TOMConfiguration(int processId, KeyLoader loader) {
@@ -393,6 +395,20 @@ public class TOMConfiguration extends Configuration {
 		    	simulateFault = false;
 		    }
 
+            s = (String) configs.remove("system.state.faultyshardcount");
+            if (s == null) {
+            	faultyShardCount = -1;
+            } else {
+            	faultyShardCount = Integer.parseInt(s);
+            }
+
+            s = (String) configs.remove("system.state.nonreplyingreplicaid");
+            if (s == null) {
+            	nonReplyingReplicaID = -1;
+            } else {
+            	nonReplyingReplicaID = Integer.parseInt(s);
+            }
+
             	
         } catch (Exception e) {
             logger.error("Could not parse system configuration file",e);
@@ -599,6 +615,14 @@ public class TOMConfiguration extends Configuration {
 
 	public boolean simulateFault() {
 		return simulateFault;
+	}
+	
+	public int faultyShardCount() {
+		return faultyShardCount;
+	}
+
+	public int getNonReplyingReplicaID() {
+		return nonReplyingReplicaID;
 	}
 
     public static TOMConfiguration staticLoad() {

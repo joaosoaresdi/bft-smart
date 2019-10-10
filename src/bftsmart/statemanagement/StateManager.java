@@ -247,7 +247,7 @@ public abstract class StateManager {
 			logger.info("Sending ConsensusID query {}", currentCID);
 			tomLayer.getCommunication().send(target, currentCID);
 			try {
-				// TODO: this should be parameterised (value modified by JSoares)
+				// TODO: shouldn't this be parameterised???? (value modified by JSoares)
 				Thread.sleep(25000);
 			} catch (InterruptedException e) {
 				logger.error("Interruption during sleep", e);

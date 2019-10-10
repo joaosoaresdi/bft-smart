@@ -22,6 +22,7 @@ import java.net.Socket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import bftsmart.reconfiguration.util.TOMConfiguration;
 import bftsmart.statemanagement.ApplicationState;
 import bftsmart.tom.server.Recoverable;
 import bftsmart.tom.server.durability.DurabilityCoordinator;
@@ -29,11 +30,13 @@ import bftsmart.tom.server.durability.DurabilityCoordinator;
 public class StateSenderServer implements Runnable {
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+	private int id;
 	private ServerSocket server;
 	private DurabilityCoordinator coordinator;
 	private CSTRequest request;
 
-	public StateSenderServer(int port, Recoverable recoverable, CSTRequest request) {
+	public StateSenderServer(int id, int port, Recoverable recoverable, CSTRequest request) {
+		this.id = id;
 		this.coordinator = (DurabilityCoordinator) (recoverable);
 		this.request = request;
 		try {
@@ -49,12 +52,17 @@ public class StateSenderServer implements Runnable {
 			try {
 				Socket socket = server.accept();
 				logger.debug("Received connection for state transfer");
+				
+				if(TOMConfiguration.staticLoad().getNonReplyingReplicaID() == id) {
+					logger.debug("Ignoring connection");
+					continue;
+				}
+				
 				long t0 = System.currentTimeMillis();
 				ApplicationState state = coordinator.getState(request);
 				System.out.println("Get State time : " + (System.currentTimeMillis() - t0));
 				StateSenderRunnable sender = new StateSenderRunnable(socket, state);
 				sender.run();
-//				new Thread(sender).start();
 			} catch (Exception e) {
 				e.printStackTrace();
 				logger.error("Problem executing StateSenderServer thread", e);

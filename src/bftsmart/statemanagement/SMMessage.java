@@ -36,7 +36,7 @@ public abstract class SMMessage extends SystemMessage {
     private int type; // Message type
     private int regency; // Current regency
     private int leader; // Current leader
-    public final boolean TRIGGER_SM_LOCALLY; // indicates that the replica should
+    protected final boolean TRIGGER_SM_LOCALLY; // indicates that the replica should
                                              // initiate the SM protocol locally
 
     /**

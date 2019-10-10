@@ -112,7 +112,6 @@ public class ServerCommunicationSystem implements Runnable{
      */
     @Override
     public void run() {
-        
         logger.info("ServerCommunicationSystem started.");
         long count = 0;
         while (doWork) {
@@ -135,7 +134,6 @@ public class ServerCommunicationSystem implements Runnable{
             }
         }
         logger.info("ServerCommunicationSystem stopped.");
-
     }
 
     /**

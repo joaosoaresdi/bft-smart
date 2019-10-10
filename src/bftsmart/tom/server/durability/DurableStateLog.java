@@ -378,8 +378,18 @@ public class DurableStateLog extends StateLog {
             int lastCIDInState = lastCheckpointCID + cstRequest.getLogUpperSize();
 //            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
             if(TOMConfiguration.staticLoad().simulateFault()) {
-            	if(data.length != 0)
-            		data[0] = 123;
+            	int faultyShards = TOMConfiguration.staticLoad().faultyShardCount(); 
+            	if( faultyShards != -1) {
+                	if(data.length != 0) {
+                		for(int i = 0; i < faultyShards; i++) {
+                			if(data.length < i*shardSize)
+                				data[i*shardSize] = 123;
+                		}
+                	}
+            	}
+            	else {
+            		data = new byte[data.length];
+            	}
 	            ShardedCSTState cstState = new ShardedCSTState(data, ckpHash, null, null, logUpper, null, lastCheckpointCID, lastCIDInState, this.id, cstRequest.getHashAlgo(), cstRequest.getShardSize(), false);
 	            return cstState;
             }
@@ -419,7 +429,7 @@ public class DurableStateLog extends StateLog {
                 
                 if(TOMConfiguration.staticLoad().simulateFault()) {
 	                if(sendFaultyState) {
-	                    cstState = new CSTState(new byte[ckpState.clone().length], null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id);
+	                    cstState = new CSTState(new byte[ckpState.length], null, null, logLowerHash, null, logUpperHash, lastCheckpointCID, lastCID, this.id);
 	                    sendFaultyState = false;
 	                }
 	                else {
