@@ -50,8 +50,10 @@ public class StateSenderRunnable implements Runnable {
 			oos.close();
 			os.close();
 			System.out.println("network send time : " + (System.currentTimeMillis()-t0));
-			logger.debug("Replica state transfer successful (bytes: {}, socket: {})", state.getSerializedState().length, socket);
-			logger.debug("Replica state transfer successful (bytes: {}, socket: {})", state.getSerializedState().length, socket);
+			if(state.getSerializedState() != null) {
+				logger.debug("Replica state transfer successful (bytes: {}, socket: {})", state.getSerializedState().length, socket);
+				logger.debug("Replica state transfer successful (bytes: {}, socket: {})", state.getSerializedState().length, socket);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("Error during state transfer",e);
