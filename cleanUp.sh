@@ -1,2 +1,2 @@
 rm files/*
-rm config/*.currentView
+rm config/currentView

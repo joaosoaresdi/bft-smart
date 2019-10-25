@@ -13,8 +13,4 @@
 # limitations under the License.
 
 #/bin/bash
-
-REPLICA_INDEX=$1
-
-./cleanUp.sh;
-java -Dlogback.configurationFile="./config/logback.xml" -Xms256g -Xmx510g -cp .:./bin:./lib/* bftsmart.demo.ycsb.YCSBServer $REPLICA_INDEX
+java -Dlogback.configurationFile="./config/logback.xml" -Xms64g -Xmx120g -cp .:./lib/*:./bin com.yahoo.ycsb.Client -threads 16 -P config/workloads/workloada -p measurementtype=timeseries -p timeseries.granularity=1000 -db bftsmart.demo.ycsb.YCSBClient -s

@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#java -Dlogback.configurationFile="./config/logback.xml" -Xms64g -Xmx100g -cp ./lib/*:./bin/ com.yahoo.ycsb.Client -load -P config/workloads/workloada -db bftsmart.demo.ycsb.YCSBClient
+
 #/bin/bash
-
-REPLICA_INDEX=$1
-
-./cleanUp.sh;
-java -Dlogback.configurationFile="./config/logback.xml" -Xms256g -Xmx510g -cp .:./bin:./lib/* bftsmart.demo.ycsb.YCSBServer $REPLICA_INDEX
+if [ $# -eq 1 ]; then
+	java -Dlogback.configurationFile="./config/logback.xml" -Xms64g -Xmx120g -cp .:./lib/*:./bin com.yahoo.ycsb.Client -load -P config/workloads/workloada -p recordcount=$1 -db bftsmart.demo.ycsb.YCSBClient
+else
+    echo "Missing arguments"
+    echo "Usage: ycsbPopulate.sh recordcount"
+fi
